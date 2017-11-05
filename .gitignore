@@ -48,3 +48,6 @@ Temporary Items
 
 # PyCharm project
 .idea
+
+# Python bytecode
+*.pyc
