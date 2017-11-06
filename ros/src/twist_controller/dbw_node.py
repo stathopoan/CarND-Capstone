@@ -82,7 +82,7 @@ class DBWNode(object):
 
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
-        brake_deadband = rospy.get_param('~brake_deadband', .1)
+        brake_deadband = rospy.get_param('~brake_deadband', .1)  # TODO Support!
         decel_limit = rospy.get_param('~decel_limit', -5)
         accel_limit = rospy.get_param('~accel_limit', 1.)
         wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
@@ -277,7 +277,7 @@ class DBWNode(object):
         data_msg = '{} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}\n'
         self.data_out_file.write(data_msg.format(self.count, wanted_velocity, throttle, brake, steering, linear_v_error, angular_vel_error, cte, delta_t, processing_time, avg_processing_time ))
 
-        log_msg = '#{} wanted_velocity={:.4f} throttle={:.4f} brake={:.4f} steer={:.4f} linear_v_error={:.4f} cte={:.4f} delta_t={:.4f} processing_time={:.4f} avg proc time={:.4f}'
+        log_msg = '#{} * wanted_velocity={:.4f} throttle={:.4f} brake={:.4f} steer={:.4f} linear_v_error={:.4f} cte={:.4f} delta_t={:.4f} processing_time={:.4f} avg proc time={:.4f}'
         rospy.logdebug(log_msg.format(self.count, wanted_velocity, throttle, brake, steering, linear_v_error, cte, delta_t, processing_time, avg_processing_time ))
 
     def current_velocity_cb(self, msg):

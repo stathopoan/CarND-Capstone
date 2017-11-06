@@ -1,6 +1,8 @@
+import matplotlib
+matplotlib.use('TkAgg')  # Needs to be done before importing pyplot
+
 import csv
 from matplotlib import pyplot as plt
-import numpy as np
 
 # 0)Iteration 1)wanted_velocity 2)throttle 3)brake 4)steer 5)linear_v_error 6)angular_v_error 7)cte 8)delta_t 9)processing_time 10)avg_proc_time
 

@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import matplotlib
+matplotlib.use('TkAgg')  # Needs to be done before importing pyplot
 
 import rospy
 from geometry_msgs.msg import PoseStamped
