@@ -99,7 +99,7 @@ def get_bearing_from_pose(my_pose, from_pose):
 
 def get_next_waypoint_idx(pose, waypoints, starting_idx):
     """
-    Determines the index of the first waypoint in a list of waypoints that in front of the car, starting from a given
+    Determines the index of the first waypoint in front of the car in a list of waypoints, starting from a given
     index. Note that the car is assumed to moved toward waypoints of increasing index (not allowed to go backward, or
     the other way around).
     :param pose: the car pose, inclusive of orientation.
@@ -146,10 +146,16 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         self.waypoints = None
 
-        # The index in self.waypoints[] of the last waypoint found to be the closest in front of the car
+        ''' Every time a /current_pose message is received, method pose_cb() determines the first track waypoint
+        in front of the car. To do so, it scans the list of waypoints in self.waypoints. Once it finds the
+        wanted waypoint, it saves its index in self.prev_wp_idx (here below).
+        Next time a /current_pose event is received, method pose_cb() will start searching self.waypoints from
+        the position saved in self.prev_we_idx; this is more efficient than looking every time starting from
+        the beginning of the list. '''
         self.prev_wp_idx = 0
-        self.received_pose_count = 0  # Counts how many car pose updates have been received
-        self.previous_pose_cb_time = None  # Time of the last pose received
+
+        self.received_pose_count = 0  # Counts how many car pose updates (/current_pose messages) have been received
+        self.previous_pose_cb_time = None  # Time of when the last pose (/current_pose messages) has been received
         self.total_time = .0  # Total time spent in executing pose_cb(), for performance monitoring
 
         rospy.spin()
@@ -169,8 +175,9 @@ class WaypointUpdater(object):
         self.previous_pose_cb_time = now
         self.received_pose_count += 1 # TODO protect with mutex!
 
-        # rospy.logdebug('Processing pose #{}'.format(self.received_pose_count))
-        # rospy.logdebug('delta_t from previous processing is {} with average {}'.format(delta_t, self.total_time/self.received_pose_count))
+        rospy.logdebug('Processing pose #{}; delta_t from previous processing is {}s with average {}s'.format(self.received_pose_count,
+                                                                                                              delta_t,
+                                                                                                              self.total_time/self.received_pose_count))
 
         # Determine the index in `self.waypoints` of the first waypoint in front of the car
         pose_i = get_next_waypoint_idx(msg.pose, self.waypoints, self.prev_wp_idx)
@@ -187,14 +194,19 @@ class WaypointUpdater(object):
             wp.twist.twist.linear.x = 9.  # Currentlys setting the speed to this constant value (in m/s).
             lane.waypoints.append(wp)
         self.final_waypoints_pub.publish(lane)
-        # total_time = time.time() - start_time
-        # rospy.logdebug('Time spent in pose_cb: {}'.format(total_time))
+        total_time = time.time() - now
+        rospy.logdebug('Time spent in pose_cb: {}s'.format(total_time))
 
     def waypoints_cb(self, waypoints):
+        """
+        Receives the list of waypoints making the track and store it in self.waypoints
+        :param waypoints: the received message
+        """
         # This callback should be called only once, with the list of waypoints not yet initialised.
         assert self.waypoints is None
 
         self.waypoints= waypoints.waypoints  # No need to guarantee mutual exclusion in accessing this data member
+
         # Now that the waypoints describing the track have been received, it is time to subscribe to pose updates.
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
 
