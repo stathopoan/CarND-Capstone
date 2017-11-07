@@ -7,10 +7,10 @@ from matplotlib import pyplot as plt
 # 0)Iteration 1)wanted_velocity 2)throttle 3)brake 4)steer 5)linear_v_error 6)angular_v_error 7)cte 8)delta_t 9)processing_time 10)avg_proc_time
 
 def main():
-    do = (1, 2, 5, 7, 3)  # List here the indices of the parameters to be plotted
+    do = (1, 2, 3, 4, 5, 6, 7, 9)  # List here the indices of the parameters to be plotted
     # 0)Iteration 1)wanted_velocity 2)throttle 3)brake 4)steer 5)linear_v_error 6)angular_v_error 7)cte 8)delta_t 9)processing_time 10)avg_proc_time
 
-    max_entries = 200000  # Process at most these many entries from the log file
+    max_entries = 5000  # Process at most these many entries from the log file
     skip_entries = 0  # Skip these many entries from the beginning of the log file
 
     # Read the log file

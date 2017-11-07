@@ -6,7 +6,6 @@ import time
 import copy
 import rospy
 import tf
-from collections import deque
 import numpy as np
 
 from std_msgs.msg import Bool
@@ -107,7 +106,11 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        self.max_decel_torque = abs((vehicle_mass + fuel_capacity*GAS_DENSITY)*decel_limit*wheel_radius)
+        '''
+        The max deceleration torque the car is capable of, taken with positive sign.
+        GAS_DENSITY is expressed in kg/US gallon, needs to be converted into kg/m**3
+        '''
+        self.max_decel_torque = abs((vehicle_mass + fuel_capacity*GAS_DENSITY/.00378541)*decel_limit*wheel_radius)
 
         self.pose_x, self.pose_y, self.pose_yaw = None, None, None
         self.pose_lock = threading.Lock()
@@ -127,9 +130,6 @@ class DBWNode(object):
         # Write header for file
         self.data_out_file.write('Iteration wanted_velocity throttle brake steer linear_v_error angular_v_error cte delta_t processing_time avg_proc_time\n')
 
-        # TODO: Create `TwistController` object
-        # self.controller = TwistController(<Arguments you wish to provide>)
-
         self.yaw_controller = YawController(wheel_base=wheel_base,
                                             steer_ratio=steer_ratio,
                                             min_speed=0,
@@ -141,7 +141,6 @@ class DBWNode(object):
         # self.throttle_controller = PID(.2, .1, .16, mn=-1., mx=accel_limit)  # Set 3
         self.throttle_controller = PID(.2, .05, .8, mn=-1., mx=accel_limit)  # Set 4 <=== best so far
 
-        # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.DBW_enabled_cb)
@@ -218,17 +217,12 @@ class DBWNode(object):
         self.pose_lock.release();
 
     def twist_cb(self, msg):  # This is called at 30 Hz
-        # rospy.logdebug('Received twist message:')
-        # rospy.logdebug(msg)
-        # self.publish(1, 0, -8)
-
         current_time = time.time()
         if self.last_twist_cb_time is None:
             self.last_twist_cb_time = current_time
             return
         self.total_time += current_time - self.last_twist_cb_time
         self.count += 1.
-        # delta_t = current_time - self.last_twist_cb_time
         delta_t = .0333333
         self.last_twist_cb_time = current_time
 
@@ -241,10 +235,8 @@ class DBWNode(object):
         steering = self.yaw_controller.get_steering(linear_velocity=wanted_velocity,
                                                     angular_velocity=wanted_angular_velocity,
                                                     current_velocity=current_linear_v)
-        # steering = rad2deg(steering)
         steering = self.steering_filter.filt(steering)
         linear_v_error= wanted_velocity - current_linear_v
-        # linear_v_error = 11.1111 - current_linear_v
         throttle = self.throttle_controller.step(linear_v_error, delta_t)
         if current_linear_v >= wanted_velocity and throttle > 0:
             throttle = 0
