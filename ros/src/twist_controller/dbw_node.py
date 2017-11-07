@@ -7,6 +7,7 @@ import copy
 import rospy
 import tf
 import numpy as np
+import os
 
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
@@ -15,9 +16,7 @@ from pid import PID
 from twist_controller import GAS_DENSITY
 from geometry_msgs.msg import TwistStamped, PoseStamped
 from styx_msgs.msg import Lane
-from lowpass import LowPassFilter, SimpleLowPassFilter
-
-from matplotlib import pyplot as plt
+from lowpass import SimpleLowPassFilter, LowPassFilter
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -46,6 +45,7 @@ that we have created in the `__init__` function.
 def rad2deg(rad):
     return rad/math.pi*180
 
+
 def deg2rad(deg):
     return deg/180.*math.pi
 
@@ -62,7 +62,7 @@ def cte_from_waypoints(car_x, car_y, car_yaw, waypoints):
         y_rot = (shift_x * math.sin(-car_yaw) + shift_y * math.cos(-car_yaw))
         wp_transformed_x.append(x_rot)
         wp_transformed_y.append(y_rot)
-    coeffs = np.polyfit(wp_transformed_x, wp_transformed_y, 3) # TODO try 5 as well
+    coeffs = np.polyfit(wp_transformed_x, wp_transformed_y, 3)
     cte = np.polyval(coeffs, .0)
     return cte
 
@@ -73,6 +73,13 @@ def unpack_pose(pose):  # TODO code duplication!
     quaternion = (pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w)
     _, _, yaw = tf.transformations.euler_from_quaternion(quaternion)
     return x, y, yaw
+
+
+def get_progressive_file_name(root, ext):
+    i = 0
+    while os.path.exists("{}{:04d}.{}".format(root,i, ext)):
+        i += 1
+    return "{}{:04d}.{}".format(root, i, ext)
 
 
 class DBWNode(object):
@@ -111,6 +118,7 @@ class DBWNode(object):
         GAS_DENSITY is expressed in kg/US gallon, needs to be converted into kg/m**3
         '''
         self.max_decel_torque = abs((vehicle_mass + fuel_capacity*GAS_DENSITY/.00378541)*decel_limit*wheel_radius)
+        self.torque_deadband = (vehicle_mass + fuel_capacity * GAS_DENSITY / .00378541) * brake_deadband * wheel_radius
 
         self.pose_x, self.pose_y, self.pose_yaw = None, None, None
         self.pose_lock = threading.Lock()
@@ -121,13 +129,17 @@ class DBWNode(object):
         self.throttle_filter = LowPassFilter(1, 1) # fifty-fifty
         self.steering_filter = SimpleLowPassFilter(.25)
 
-
         self.total_time =.0
         self.count =.0
 
-        self.data_out_file = open('charting_data.txt', 'w')
+        path_to_dir = os.path.expanduser('~/.ros/chart_data')  # Replace ~ with path to user home directory
+        f_name = get_progressive_file_name(path_to_dir, 'txt')
+        self.data_out_file = open(f_name, 'w')
         assert self.data_out_file is not None
-        # Write header for file
+        rospy.loginfo('Writing performance data to file {}'.format(f_name))
+        # Write headers for file
+        kP, kI, kD = .35, .05, .8
+        self.data_out_file.write('P={} I={} D={}\n'.format(kP, kI, kD))
         self.data_out_file.write('Iteration wanted_velocity throttle brake steer linear_v_error angular_v_error cte delta_t processing_time avg_proc_time\n')
 
         self.yaw_controller = YawController(wheel_base=wheel_base,
@@ -139,7 +151,7 @@ class DBWNode(object):
         # self.throttle_controller = PID(.3, .0, .16, mn=-1., mx = accel_limit)  # Set 1
         # self.throttle_controller = PID(.3, .8, .16, mn=-1., mx=accel_limit)  # Set 2
         # self.throttle_controller = PID(.2, .1, .16, mn=-1., mx=accel_limit)  # Set 3
-        self.throttle_controller = PID(.2, .05, .8, mn=-1., mx=accel_limit)  # Set 4 <=== best so far
+        self.throttle_controller = PID(kP, kI, kD, mn=-1., mx=accel_limit)  # Set 4 <=== best so far
 
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
@@ -246,8 +258,9 @@ class DBWNode(object):
             brake = .0
         else:
             brake = self.max_decel_torque * abs(throttle)
-            throttle = 0
-
+            # if brake <= self.torque_deadband:
+            #    brake =.0
+            throttle = .0
 
         assert 0 <= throttle <= 1
         assert 0 <= brake <= self.max_decel_torque
