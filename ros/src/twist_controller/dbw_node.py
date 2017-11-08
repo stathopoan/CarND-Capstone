@@ -134,7 +134,7 @@ class DBWNode(object):
         self.total_time =.0
         self.count =.0
 
-        kP, kI, kD = .45, .05, 0.8
+        kP, kI, kD = .45, .05, 0.4
 
         path_to_dir = os.path.expanduser('~/.ros/chart_data')  # Replace ~ with path to user home directory
         f_name = get_progressive_file_name(path_to_dir, 'txt')
