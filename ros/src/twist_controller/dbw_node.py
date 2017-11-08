@@ -132,13 +132,14 @@ class DBWNode(object):
         self.total_time =.0
         self.count =.0
 
+        kP, kI, kD = .35, .05, 1.2
+
         path_to_dir = os.path.expanduser('~/.ros/chart_data')  # Replace ~ with path to user home directory
         f_name = get_progressive_file_name(path_to_dir, 'txt')
         self.data_out_file = open(f_name, 'w')
         assert self.data_out_file is not None
         rospy.loginfo('Writing performance data to file {}'.format(f_name))
         # Write headers for file
-        kP, kI, kD = .35, .05, 1.2
         self.data_out_file.write('P={} I={} D={}\n'.format(kP, kI, kD))
         self.data_out_file.write('Iteration wanted_velocity throttle brake steer linear_v_error angular_v_error cte delta_t processing_time avg_proc_time\n')
 
@@ -151,7 +152,7 @@ class DBWNode(object):
         # self.throttle_controller = PID(.3, .0, .16, mn=-1., mx = accel_limit)  # Set 1
         # self.throttle_controller = PID(.3, .8, .16, mn=-1., mx=accel_limit)  # Set 2
         # self.throttle_controller = PID(.2, .1, .16, mn=-1., mx=accel_limit)  # Set 3
-        self.throttle_controller = PID(kP, kI, kD, mn=-1., mx=accel_limit)  # Set 4 <=== best so far
+        self.throttle_controller = PID(kP, kI, kD, mn=-1, mx=accel_limit)  # Set 4 <=== best so far
 
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
@@ -258,8 +259,8 @@ class DBWNode(object):
             brake = .0
         else:
             brake = self.max_decel_torque * abs(throttle)
-            # if brake <= self.torque_deadband:
-            #    brake =.0
+            if brake <= self.torque_deadband:
+                brake =.0
             throttle = .0
 
         assert 0 <= throttle <= 1

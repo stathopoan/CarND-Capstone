@@ -19,7 +19,7 @@ def main():
 
     # Read the log file
     count = 0
-    f_name = os.path.expanduser('~/.ros/chart_data0000.txt')
+    f_name = os.path.expanduser('~/.ros/chart_data0001.txt')
     print 'Reading data from file', f_name
     print
     with open(f_name, 'r') as csvfile:
