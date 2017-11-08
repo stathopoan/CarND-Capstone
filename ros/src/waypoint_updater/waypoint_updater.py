@@ -157,6 +157,7 @@ class WaypointUpdater(object):
         self.received_pose_count = 0  # Counts how many car pose updates (/current_pose messages) have been received
         self.previous_pose_cb_time = None  # Time of when the last pose (/current_pose messages) has been received
         self.total_time = .0  # Total time spent in executing pose_cb(), for performance monitoring
+        self.min_update_int = .1
 
         rospy.spin()
 
@@ -171,8 +172,12 @@ class WaypointUpdater(object):
         # Update time and count information about received poses
         now = time.time()
         delta_t = 0 if self.previous_pose_cb_time is None else now-self.previous_pose_cb_time
-        self.total_time += delta_t
+        if self.previous_pose_cb_time is None:
+            self.previous_pose_cb_time = now
+        if delta_t < self.min_update_int:
+            return
         self.previous_pose_cb_time = now
+        self.total_time += delta_t
         self.received_pose_count += 1 # TODO protect with mutex!
 
         rospy.logdebug('Processing pose #{}; delta_t from previous processing is {}s with average {}s'.format(self.received_pose_count,

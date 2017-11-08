@@ -84,6 +84,8 @@ def get_progressive_file_name(root, ext):
 
 class DBWNode(object):
     def __init__(self):
+        cwd = os.getcwd()
+
         rospy.init_node('dbw_node', log_level=rospy.DEBUG)
 
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
@@ -126,18 +128,19 @@ class DBWNode(object):
         self.final_waypoints = []
         self.final_waypoints_lock = threading.Lock()
 
-        self.throttle_filter = LowPassFilter(1, 1) # fifty-fifty
+        self.throttle_filter = LowPassFilter(1., 1.)  # fifty-fifty
         self.steering_filter = SimpleLowPassFilter(.25)
 
         self.total_time =.0
         self.count =.0
 
-        kP, kI, kD = .35, .05, 1.2
+        kP, kI, kD = .4, .05, 1.2
 
         path_to_dir = os.path.expanduser('~/.ros/chart_data')  # Replace ~ with path to user home directory
         f_name = get_progressive_file_name(path_to_dir, 'txt')
         self.data_out_file = open(f_name, 'w')
         assert self.data_out_file is not None
+        rospy.logdebug('Current dir is {}'.format(cwd))
         rospy.loginfo('Writing performance data to file {}'.format(f_name))
         # Write headers for file
         self.data_out_file.write('P={} I={} D={}\n'.format(kP, kI, kD))
@@ -149,10 +152,7 @@ class DBWNode(object):
                                             max_lat_accel=max_lat_accel,
                                             max_steer_angle=max_steer_angle)
 
-        # self.throttle_controller = PID(.3, .0, .16, mn=-1., mx = accel_limit)  # Set 1
-        # self.throttle_controller = PID(.3, .8, .16, mn=-1., mx=accel_limit)  # Set 2
-        # self.throttle_controller = PID(.2, .1, .16, mn=-1., mx=accel_limit)  # Set 3
-        self.throttle_controller = PID(kP, kI, kD, mn=-1, mx=accel_limit)  # Set 4 <=== best so far
+        self.throttle_controller = PID(kP, kI, kD, mn=-1, mx=accel_limit)
 
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
@@ -230,15 +230,25 @@ class DBWNode(object):
         self.pose_lock.release();
 
     def twist_cb(self, msg):  # This is called at 30 Hz
+        # Time-keeping
         current_time = time.time()
         if self.last_twist_cb_time is None:
             self.last_twist_cb_time = current_time
             return
         self.total_time += current_time - self.last_twist_cb_time
-        self.count += 1.
-        delta_t = .0333333
         self.last_twist_cb_time = current_time
+        self.count += 1.
 
+        '''
+        Time interval between two messages. This is the expected average time. If I use instead the actual time elapsed
+        since the previous call to the call-back, the variance in delta_t screws up the PID controller
+        '''
+        delta_t = .0333333
+
+        '''
+        If DBW is disabled, just return. You do not want the PID controller to update the cumulative I error in this
+        case.
+        '''
         if not self.get_dbw_enabled():
             return
 
@@ -249,26 +259,34 @@ class DBWNode(object):
                                                     angular_velocity=wanted_angular_velocity,
                                                     current_velocity=current_linear_v)
         steering = self.steering_filter.filt(steering)
+
         linear_v_error= wanted_velocity - current_linear_v
         throttle = self.throttle_controller.step(linear_v_error, delta_t)
         if current_linear_v >= wanted_velocity and throttle > 0:
-            throttle = 0
+            throttle = 0  # No accelerating if already above wanted_velocity
         throttle = self.throttle_filter.filt(throttle)
 
         if throttle >= 0:
-            brake = .0
+            brake = .0  # No accelerating and braking at the same time
         else:
             brake = self.max_decel_torque * abs(throttle)
-            if brake <= self.torque_deadband:
-                brake =.0
-            throttle = .0
+            if brake <= self.torque_deadband or current_linear_v <= wanted_velocity:
+                brake =.0  # No braking if below wanted velocity, or if braking would be in the torque dead-band
+            throttle = .0  # No braking and accelerating at the same time
 
         assert 0 <= throttle <= 1
         assert 0 <= brake <= self.max_decel_torque
+
         self.publish(throttle=throttle, brake=brake, steer=steering)
+
+        '''
+        Processing below is kept after self.publish(), in order to minimise delay in propagating steering/throttle/brake
+        commands
+        '''
 
         processing_time = time.time()-current_time
 
+        # Estimate cross-track error
         path = self.get_final_waypoints(max_n_points=8)
         pose_x, pose_y, pose_yaw = self.get_pose()
         if len(path) > 0 and pose_x is not None:
@@ -276,14 +294,16 @@ class DBWNode(object):
         else:
             cte = 0
 
+        # Evaluate more metrics to be reported
         angular_vel_error = wanted_angular_velocity - current_angular_v
-
         avg_processing_time = self.total_time/self.count
 
+        # Write to the log file used for off-line metrics charting and reporting
         data_msg = '{} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}\n'
         self.data_out_file.write(data_msg.format(self.count, wanted_velocity, throttle, brake, steering, linear_v_error, angular_vel_error, cte, delta_t, processing_time, avg_processing_time ))
 
-        log_msg = '#{} * wanted_velocity={:.4f} throttle={:.4f} brake={:.4f} steer={:.4f} linear_v_error={:.4f} cte={:.4f} delta_t={:.4f} processing_time={:.4f} avg proc time={:.4f}'
+        # Write to ROS log files
+        log_msg = '#{} wanted_velocity={:.4f} throttle={:.4f} brake={:.4f} steer={:.4f} linear_v_error={:.4f} cte={:.4f} delta_t={:.4f} processing_time={:.4f} avg proc time={:.4f}'
         rospy.logdebug(log_msg.format(self.count, wanted_velocity, throttle, brake, steering, linear_v_error, cte, delta_t, processing_time, avg_processing_time ))
 
     def current_velocity_cb(self, msg):
