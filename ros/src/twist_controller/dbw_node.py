@@ -138,7 +138,7 @@ class DBWNode(object):
         assert self.data_out_file is not None
         rospy.loginfo('Writing performance data to file {}'.format(f_name))
         # Write headers for file
-        kP, kI, kD = .35, .05, .8
+        kP, kI, kD = .35, .05, 1.2
         self.data_out_file.write('P={} I={} D={}\n'.format(kP, kI, kD))
         self.data_out_file.write('Iteration wanted_velocity throttle brake steer linear_v_error angular_v_error cte delta_t processing_time avg_proc_time\n')
 
