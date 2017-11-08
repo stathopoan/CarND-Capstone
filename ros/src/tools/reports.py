@@ -11,7 +11,7 @@ import os
 # 0)Iteration 1)wanted_velocity 2)throttle 3)brake 4)steer 5)linear_v_error 6)angular_v_error 7)cte 8)delta_t 9)processing_time 10)avg_proc_time
 
 def main():
-    f_name = os.path.expanduser('~/.ros/chart_data0018.txt')
+    f_name = os.path.expanduser('~/.ros/chart_data0021.txt')
 
     do = (1, 2, 3, 4, 5, 6, 7, 9)  # List here the indices of the parameters to be plotted
     # 0)Iteration 1)wanted_velocity 2)throttle 3)brake 4)steer 5)linear_v_error 6)angular_v_error 7)cte 8)delta_t 9)processing_time 10)avg_proc_time
@@ -29,6 +29,7 @@ def main():
         first_line_skipped = False
         for line in file_reader:
             if not first_line_skipped:
+                first_line = line
                 first_line_skipped =  True
                 continue
             if is_header:
@@ -68,6 +69,9 @@ def main():
     for i_category in xrange(total_n_categories):
         positive_percentage[i_category] /= float(n_entries)
 
+    print first_line
+    print
+
     for i_category in xrange(1, total_n_categories):
         print header[i_category]
         print '   Mean      ', mean[i_category]
@@ -80,6 +84,7 @@ def main():
 
     plt.ion()
     fig, axes = plt.subplots(nrows=n_categories)
+    fig.canvas.set_window_title(f_name)
     x = list(xrange(skip_entries, n_entries + skip_entries))
     for i in xrange(n_categories):
         category_i = do[i]
