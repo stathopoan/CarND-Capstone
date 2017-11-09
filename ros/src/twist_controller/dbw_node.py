@@ -131,8 +131,8 @@ class DBWNode(object):
         self.throttle_filter = LowPassFilter(1., 1.)  # fifty-fifty
         self.steering_filter = SimpleLowPassFilter(.25)
 
-        self.total_time =.0
-        self.count =.0
+        self.total_time = .0
+        self.count = .0
 
         kP, kI, kD = .45, .05, 0.4
 
