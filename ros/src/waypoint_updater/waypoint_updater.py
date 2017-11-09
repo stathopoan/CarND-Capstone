@@ -221,7 +221,7 @@ class WaypointUpdater(object):
         self.received_pose_count = 0  # Counts how many car pose updates (/current_pose messages) have been received
         self.previous_pose_cb_time = None  # Time of when the last pose (/current_pose messages) has been received
         self.total_time = .0  # Total time spent in executing pose_cb(), for performance monitoring
-        self.min_update_int = .1
+        self.min_update_int = .2
 
         self.current_linear_velocity = .0
         self.current_yaw_velocity = .0
@@ -268,11 +268,13 @@ class WaypointUpdater(object):
             wp = self.waypoints[i]
             wp.twist.twist.linear.x = 9.  # Currently setting the speed to this constant value (in m/s).
             lane.waypoints.append(wp)
+        """
         if pose_i+LOOKAHEAD_WPS > 750:
             current_vel, _ = self.get_current_velocity()
             lane.waypoints = plan_stop(lane.waypoints, 750-pose_i, current_vel, -1)  # TODO 751?
         if pose_i >= 750:
             lane.waypoints = []
+        """
         self.final_waypoints_pub.publish(lane)
         total_time = time.time() - now
         rospy.logdebug('Time spent in pose_cb: {}s'.format(total_time))

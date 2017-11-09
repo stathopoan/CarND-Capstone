@@ -324,9 +324,15 @@ if __name__ == '__main__':
 TODO
 ====
 
-- brake_deadband ?
+* correggere la decelerazione nel waypoint udpater, attualmente usa la velocita' di riferimento sbagliata (deve usare
+quella dell'ultimo waypoint non decelerato)
 - servono veramente le deep copy?
 - controlla il time-stamp degli eventi in arrivo a twist_cb()
-- aggiunta calcolo metriche a reports.py
+- e' richiesto fermarsi all'ultimo waypoint della traccia? Chiesto su Slack
+* usare due diversi PID, uno per accelerare ed uno per frenare, con la deadband in mezzo
+- calcolare la velocita' di crocera in base alla velocita' massima
+- controllare il limite sullo steerin. Che senso ha 8??
+- l'auto potrebbe andare all'indietro? Ovvero avere una velocita' negativa. Considerare di gestirlo.
+- considera di prendere il max torque da BrakCmd.TORQUE_MAX
 
 """
