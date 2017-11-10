@@ -7,8 +7,7 @@ import tf
 import math
 import threading
 import time
-import copy
-from matplotlib import pyplot as plt
+
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -142,33 +141,6 @@ def distance(waypoints, wp1, wp2):
     return dist
 
 
-def plan_stop2(wps, idx, speed, max_decel):
-    waypoints = copy.deepcopy(wps)
-    assert 0 <= idx < len(waypoints)
-    assert max_decel < 0
-    time_to_stop = - speed / max_decel
-    dist_to_stop = speed * time_to_stop + .5 * max_decel * time_to_stop ** 2
-
-    current_i = idx
-    total_distance = 0
-    current_speed = speed
-    while total_distance < dist_to_stop:
-        next_i = (current_i + 1) % len(waypoints)
-        dist = distance(wps, current_i, next_i)
-        current_speed_sq = current_speed ** 2 + 2 * max_decel * dist
-        current_speed = current_speed_sq ** .5 if current_speed_sq > .0 else .0
-        waypoints[next_i].twist.twist.linear.x = max(current_speed, .0)
-        total_distance += dist
-        current_i = next_i
-
-    assert waypoints[current_i].twist.twist.linear.x == 0
-    waypoints = waypoints[0: current_i + 1]
-    for wp in waypoints[current_i + 1:]:
-        wp.twist.twist.linear.x = 0
-
-    return waypoints
-
-
 def plan_stop(wps, idx, speed, max_decel):
     """
     Alter the speed of given waypoints to ensure the car comes to a full stop around the waypoints of index idx
@@ -186,9 +158,11 @@ def plan_stop(wps, idx, speed, max_decel):
     wps[idx].twist.twist.linear.x = 0
     current_speed = 0
     current_i = idx-1
-    while current_speed < speed and current_i >= 0:
+    while current_i >= 0 and (current_i == 0 or current_speed < wps[current_i-1].twist.twist.linear.x):
         dist = distance(wps, current_i, current_i+1)
-        current_speed = min((current_speed**2 - 2*max_decel*dist)**.5, speed)
+        current_speed = (current_speed**2 - 2*max_decel*dist)**.5
+        if current_i >= 1:
+            current_speed = min(current_speed, wps[current_i-1].twist.twist.linear.x)
         wps[current_i].twist.twist.linear.x = current_speed
         current_i -= 1
 
@@ -268,13 +242,13 @@ class WaypointUpdater(object):
             wp = self.waypoints[i]
             wp.twist.twist.linear.x = 9.  # Currently setting the speed to this constant value (in m/s).
             lane.waypoints.append(wp)
-        """
+
         if pose_i+LOOKAHEAD_WPS > 750:
             current_vel, _ = self.get_current_velocity()
             lane.waypoints = plan_stop(lane.waypoints, 750-pose_i, current_vel, -1)  # TODO 751?
         if pose_i >= 750:
             lane.waypoints = []
-        """
+
         self.final_waypoints_pub.publish(lane)
         total_time = time.time() - now
         rospy.logdebug('Time spent in pose_cb: {}s'.format(total_time))
