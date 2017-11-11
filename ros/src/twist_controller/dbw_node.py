@@ -135,8 +135,8 @@ class DBWNode(object):
         self.total_time = .0
         self.count = .0
 
-        throttle_PID = .45, .05, 0.4
-        brake_PID = .45, .05, 0.4
+        throttle_PID = .22, .015, 0.0  # Best so far
+        brake_PID = .2, .0, .0  # TODO yet to be tuned!
 
         path_to_dir = os.path.expanduser('~/.ros/chart_data')  # Replace ~ with path to user home directory
         f_name = get_progressive_file_name(path_to_dir, 'txt')
@@ -265,14 +265,17 @@ class DBWNode(object):
         steering = self.steering_filter.filt(steering)
 
         linear_v_error= wanted_velocity - current_linear_v
-        throttle = self.throttle_controller.step(linear_v_error, delta_t)
-        brake = - self.brake_controller.step(linear_v_error, delta_t)*self.max_decel_torque
-        rospy.logdebug('Real brake={}'.format(brake))
-        if current_linear_v >= wanted_velocity and throttle > 0:
-            throttle = 0  # No accelerating if already above wanted_velocity
+        if linear_v_error > 0:
+            throttle = self.throttle_controller.step(linear_v_error, delta_t)
+            brake = .0
+        elif linear_v_error < 0:
+            brake = - self.brake_controller.step(linear_v_error, delta_t)*self.max_decel_torque
+            throttle = .0
+        else:  # Unlikely case
+            throttle = .0
+            brake = .0
+        rospy.logdebug('Real brake={} throttle={}'.format(brake, throttle))
         throttle = self.throttle_filter.filt(throttle)
-        if current_linear_v <= wanted_velocity and brake > 0:
-            brake = 0  # No braking if below wanted_velocity
         brake = self.brake_filter.filt(brake)
         if brake < self.torque_deadband:
             brake = 0
