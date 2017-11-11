@@ -141,7 +141,7 @@ def distance(waypoints, wp1, wp2):
     return dist
 
 
-def plan_stop(wps, idx, speed, max_decel):
+def plan_stop(wps, idx, max_decel):
     """
     Alter the speed of given waypoints to ensure the car comes to a full stop around the waypoints of index idx
     :param wps: the given waypoints
@@ -245,7 +245,7 @@ class WaypointUpdater(object):
 
         if pose_i+LOOKAHEAD_WPS > 750:
             current_vel, _ = self.get_current_velocity()
-            lane.waypoints = plan_stop(lane.waypoints, 750-pose_i, current_vel, -1)  # TODO 751?
+            lane.waypoints = plan_stop(lane.waypoints, 750-pose_i, -1)  # TODO 751?
         if pose_i >= 750:
             lane.waypoints = []
 

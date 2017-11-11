@@ -324,8 +324,6 @@ if __name__ == '__main__':
 TODO
 ====
 
-* correggere la decelerazione nel waypoint udpater, attualmente usa la velocita' di riferimento sbagliata (deve usare
-quella dell'ultimo waypoint non decelerato)
 - servono veramente le deep copy?
 - controlla il time-stamp degli eventi in arrivo a twist_cb()
 - e' richiesto fermarsi all'ultimo waypoint della traccia? Chiesto su Slack
