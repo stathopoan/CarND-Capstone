@@ -101,7 +101,15 @@ class TLDetector(object):
 
         """
         #TODO implement
-        return 0
+        closest_wp_dist = float("inf")
+        closest_wp_ind = -1
+        # TODO self.distance
+        for i in range(0, len(self.waypoints)):
+            wp_dist = self.distance(self.waypoints[i].pose.pose.position, pose.position)
+            if wp_dist <= closest_wp_dist:
+                closest_wp_dist = wp_dist
+                closest_wp_ind = i   
+        return closest_wp_ind
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
