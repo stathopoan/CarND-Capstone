@@ -26,13 +26,4 @@ class PID(object):
         y = self.kp * error + self.ki * integral + self.kd * derivative;
         val = max(self.min, min(y, self.max))
 
-        """
-        if val > self.max:
-            val = self.max
-        elif val < self.min:
-            val = self.min
-        else: """
-        self.int_val = integral
-        self.last_error = error
-
         return val

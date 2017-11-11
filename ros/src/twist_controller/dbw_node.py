@@ -129,12 +129,14 @@ class DBWNode(object):
         self.final_waypoints_lock = threading.Lock()
 
         self.throttle_filter = LowPassFilter(1., 1.)  # fifty-fifty
+        self.brake_filter = LowPassFilter(1., 1.)  # fifty-fifty
         self.steering_filter = SimpleLowPassFilter(.25)
 
         self.total_time = .0
         self.count = .0
 
-        kP, kI, kD = .45, .05, 0.4
+        throttle_PID = .45, .05, 0.4
+        brake_PID = .45, .05, 0.4
 
         path_to_dir = os.path.expanduser('~/.ros/chart_data')  # Replace ~ with path to user home directory
         f_name = get_progressive_file_name(path_to_dir, 'txt')
@@ -143,7 +145,7 @@ class DBWNode(object):
         rospy.logdebug('Current dir is {}'.format(cwd))
         rospy.loginfo('Writing performance data to file {}'.format(f_name))
         # Write headers for file
-        self.data_out_file.write('P={} I={} D={}\n'.format(kP, kI, kD))
+        self.data_out_file.write('throttle PID={}  brake PID={}\n'.format(throttle_PID, brake_PID))
         self.data_out_file.write('Iteration wanted_velocity throttle brake steer linear_v_error angular_v_error cte delta_t processing_time avg_proc_time\n')
 
         self.yaw_controller = YawController(wheel_base=wheel_base,
@@ -152,7 +154,8 @@ class DBWNode(object):
                                             max_lat_accel=max_lat_accel,
                                             max_steer_angle=max_steer_angle)
 
-        self.throttle_controller = PID(kP, kI, kD, mn=-1, mx=accel_limit)
+        self.throttle_controller = PID(throttle_PID[0], throttle_PID[1], throttle_PID[2], mn=0, mx=accel_limit)
+        self.brake_controller = PID(brake_PID[0], brake_PID[1], brake_PID[2], mn=-1, mx=0)
 
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
@@ -181,6 +184,7 @@ class DBWNode(object):
         self.dbw_enabled = enable
         if prev_value == False and enable == True:
             self.throttle_controller.reset()
+            self.brake_controller.reset()
         self.dbw_enabled_lock.release()
 
     def get_dbw_enabled(self):
@@ -240,13 +244,13 @@ class DBWNode(object):
         self.count += 1.
 
         '''
-        Time interval between two messages. This is the expected average time. If I use instead the actual time elapsed
-        since the previous call to the call-back, the variance in delta_t screws up the PID controller
+        Time interval between two messages. This is the expected time. If I use instead the actual time elapsed
+        since the previous call to the call-back, the variance in delta_t screws up the PID controllers.
         '''
         delta_t = .0333333
 
         '''
-        If DBW is disabled, just return. You do not want the PID controller to update the cumulative I error in this
+        If DBW is disabled, just return. You do not want the PID controllers to update the cumulative I error in this
         case.
         '''
         if not self.get_dbw_enabled():
@@ -262,17 +266,19 @@ class DBWNode(object):
 
         linear_v_error= wanted_velocity - current_linear_v
         throttle = self.throttle_controller.step(linear_v_error, delta_t)
+        brake = - self.brake_controller.step(linear_v_error, delta_t)*self.max_decel_torque
+        rospy.logdebug('Real brake={}'.format(brake))
         if current_linear_v >= wanted_velocity and throttle > 0:
             throttle = 0  # No accelerating if already above wanted_velocity
         throttle = self.throttle_filter.filt(throttle)
-
-        if throttle >= 0:
-            brake = .0  # No accelerating and braking at the same time
-        else:
-            brake = self.max_decel_torque * abs(throttle)
-            if brake <= self.torque_deadband or current_linear_v <= wanted_velocity:
-                brake =.0  # No braking if below wanted velocity, or if braking would be in the torque dead-band
-            throttle = .0  # No braking and accelerating at the same time
+        if current_linear_v <= wanted_velocity and brake > 0:
+            brake = 0  # No braking if below wanted_velocity
+        brake = self.brake_filter.filt(brake)
+        if brake < self.torque_deadband:
+            brake = 0
+        # TODO implement a throttle deadband too?
+        if throttle > 0 and brake > 0:
+            rospy.logdebug('WARNING braking and accelerating at the same time throttle={} brake={}'.format(throttle, brake))
 
         assert 0 <= throttle <= 1
         assert 0 <= brake <= self.max_decel_torque
