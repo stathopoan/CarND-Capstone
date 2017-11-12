@@ -7,7 +7,7 @@ import numpy as np
 class RealModel(object):
     def __init__(self, path):
         self.path = path
-        self.prob_thr = 0.3
+        self.prob_thr = 0.5
         self.RED = 2
         self.YELLOW = 7
         self.GREEN = 1
