@@ -1,3 +1,5 @@
+import time
+import threading
 
 import rospy
 
@@ -37,12 +39,16 @@ TYPE = {
 
 class Bridge(object):
     def __init__(self, conf, server):
-        rospy.init_node('styx_server')
+        rospy.init_node('styx_server',  log_level=rospy.DEBUG)
         self.server = server
         self.vel = 0.
         self.yaw = None
         self.angular_vel = 0.
         self.bridge = CvBridge()
+        self.count = 0
+        self.throttle_time = None
+        self.throttle_total_time = .0
+        self.cb_lock = threading.Lock()
 
         self.callbacks = {
             '/vehicle/steering_cmd': self.callback_steering,
@@ -181,10 +187,23 @@ class Bridge(object):
         self.publishers['image'].publish(image_message)
 
     def callback_steering(self, data):
+        self.cb_lock.acquire()
         self.server('steer', data={'steering_angle': str(data.steering_wheel_angle_cmd)})
+        self.cb_lock.release()
 
     def callback_throttle(self, data):
+        now = time.time()
+        self.cb_lock.acquire()
+        if self.throttle_time is not None:
+            self.throttle_total_time += now - self.throttle_time
+            self.count += 1
+        self.throttle_time = now
         self.server('throttle', data={'throttle': str(data.pedal_cmd)})
+        if self.count > 0:
+            rospy.logdebug('Average time interval between calls={}s  processing time={}s'.format(self.throttle_total_time / self.count, time.time()-now))
+        self.cb_lock.release()
 
     def callback_brake(self, data):
+        self.cb_lock.acquire()
         self.server('brake', data={'brake': str(data.pedal_cmd)})
+        self.cb_lock.release()

@@ -11,7 +11,7 @@ import os
 # 0)Iteration 1)wanted_velocity 2)throttle 3)brake 4)steer 5)linear_v_error 6)angular_v_error 7)cte 8)delta_t 9)processing_time 10)avg_proc_time
 
 def main():
-    f_name = os.path.expanduser('~/.ros/chart_data0120.txt')
+    f_name = os.path.expanduser('~/.ros/chart_data0133.txt')
 
     do = (1, 2, 3, 4, 5, 6, 7, 9)  # List here the indices of the parameters to be plotted
     # 0)Iteration 1)wanted_velocity 2)throttle 3)brake 4)steer 5)linear_v_error 6)angular_v_error 7)cte 8)delta_t 9)processing_time 10)avg_proc_time
