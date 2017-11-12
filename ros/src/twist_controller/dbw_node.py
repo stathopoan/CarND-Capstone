@@ -128,6 +128,9 @@ class DBWNode(object):
         self.final_waypoints = []
         self.final_waypoints_lock = threading.Lock()
 
+        self.twist = None
+        self.twist_lock = threading.Lock()
+
         self.throttle_filter = LowPassFilter(1., 1.)  # fifty-fifty
         self.brake_filter = LowPassFilter(1., 1.)  # fifty-fifty
         self.steering_filter = SimpleLowPassFilter(.25)
@@ -163,7 +166,107 @@ class DBWNode(object):
         rospy.Subscriber('/final_waypoints', Lane, self.final_waypoints_cb, queue_size=1)
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
 
-        rospy.spin()
+        self.spin()
+
+    def spin(self):
+        rate = rospy.Rate(50)  # 50Hz
+        while not rospy.is_shutdown():
+            # Time-keeping
+            current_time = time.time()
+            if self.last_twist_cb_time is None:
+                self.last_twist_cb_time = current_time
+            else:
+                self.total_time += current_time - self.last_twist_cb_time
+                self.last_twist_cb_time = current_time
+                self.count += 1.
+
+                '''
+                Time interval between two messages. This is the expected time. If I use instead the actual time elapsed
+                since the previous call to the call-back, the variance in delta_t screws up the PID controllers.
+                '''
+                delta_t = .02
+
+                '''
+                If DBW is disabled, just return. You do not want the PID controllers to update the cumulative I error in this
+                case.
+                '''
+                twist = self.get_twist()
+                if self.get_dbw_enabled() and twist is not None:
+                    wanted_velocity = twist.linear.x
+                    wanted_angular_velocity = twist.angular.z
+                    current_linear_v, current_angular_v = self.get_current_velocity()
+                    steering = self.yaw_controller.get_steering(linear_velocity=wanted_velocity,
+                                                                angular_velocity=wanted_angular_velocity,
+                                                                current_velocity=current_linear_v)
+                    steering = self.steering_filter.filt(steering)
+
+                    linear_v_error = wanted_velocity - current_linear_v
+                    if linear_v_error > 0:
+                        throttle = self.throttle_controller.step(linear_v_error, delta_t)
+                        brake = .0
+                    elif linear_v_error < 0:
+                        brake = - self.brake_controller.step(linear_v_error, delta_t) * self.max_decel_torque
+                        throttle = .0
+                    else:  # Unlikely case
+                        throttle = .0
+                        brake = .0
+                    rospy.logdebug('Real brake={} throttle={}'.format(brake, throttle))
+                    throttle = self.throttle_filter.filt(throttle)
+                    brake = self.brake_filter.filt(brake)
+                    if brake < self.torque_deadband:
+                        brake = 0
+                    # TODO implement a throttle deadband too?
+                    if throttle > 0 and brake > 0:
+                        rospy.logdebug(
+                            'WARNING braking and accelerating at the same time throttle={} brake={}'.format(throttle, brake))
+
+                    assert 0 <= throttle <= 1
+                    assert 0 <= brake <= self.max_decel_torque
+
+                    self.publish(throttle=throttle, brake=brake, steer=steering)
+
+                    '''
+                    Processing below is kept after self.publish(), in order to minimise delay in propagating steering/throttle/brake
+                    commands
+                    '''
+
+                    processing_time = time.time() - current_time
+
+                    # Estimate cross-track error
+                    path = self.get_final_waypoints(max_n_points=8)
+                    pose_x, pose_y, pose_yaw = self.get_pose()
+                    if len(path) > 0 and pose_x is not None:
+                        cte = cte_from_waypoints(pose_x, pose_y, pose_yaw, path)
+                    else:
+                        cte = 0
+
+                    # Evaluate more metrics to be reported
+                    angular_vel_error = wanted_angular_velocity - current_angular_v
+                    avg_processing_time = self.total_time / self.count
+
+                    # Write to the log file used for off-line metrics charting and reporting
+                    data_msg = '{} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}\n'
+                    self.data_out_file.write(
+                        data_msg.format(self.count, wanted_velocity, throttle, brake, steering, linear_v_error,
+                                        angular_vel_error, cte, delta_t, processing_time, avg_processing_time))
+
+                    # Write to ROS log files
+                    log_msg = '#{} wanted_velocity={:.4f} throttle={:.4f} brake={:.4f} steer={:.4f} linear_v_error={:.4f} cte={:.4f} delta_t={:.4f} processing_time={:.4f} avg proc time={:.4f}'
+                    rospy.logdebug(
+                        log_msg.format(self.count, wanted_velocity, throttle, brake, steering, linear_v_error, cte, delta_t,
+                                       processing_time, avg_processing_time))
+            rate.sleep()
+
+    def set_twist(self, twist):
+        self.twist_lock.acquire()
+        self.twist = twist
+        self.twist_lock.release()
+
+    def get_twist(self):
+        self.twist_lock.acquire()
+        twist = copy.deepcopy(self.twist)
+        self.twist_lock.release()
+        return twist
 
     def set_current_velocity(self, linear, angular):
         self.current_velocity_lock.acquire()
@@ -234,86 +337,7 @@ class DBWNode(object):
         self.pose_lock.release();
 
     def twist_cb(self, msg):  # This is called at 30 Hz
-        # Time-keeping
-        current_time = time.time()
-        if self.last_twist_cb_time is None:
-            self.last_twist_cb_time = current_time
-            return
-        self.total_time += current_time - self.last_twist_cb_time
-        self.last_twist_cb_time = current_time
-        self.count += 1.
-
-        '''
-        Time interval between two messages. This is the expected time. If I use instead the actual time elapsed
-        since the previous call to the call-back, the variance in delta_t screws up the PID controllers.
-        '''
-        delta_t = .0333333
-
-        '''
-        If DBW is disabled, just return. You do not want the PID controllers to update the cumulative I error in this
-        case.
-        '''
-        if not self.get_dbw_enabled():
-            return
-
-        wanted_velocity = msg.twist.linear.x
-        wanted_angular_velocity = msg.twist.angular.z
-        current_linear_v, current_angular_v = self.get_current_velocity()
-        steering = self.yaw_controller.get_steering(linear_velocity=wanted_velocity,
-                                                    angular_velocity=wanted_angular_velocity,
-                                                    current_velocity=current_linear_v)
-        steering = self.steering_filter.filt(steering)
-
-        linear_v_error= wanted_velocity - current_linear_v
-        if linear_v_error > 0:
-            throttle = self.throttle_controller.step(linear_v_error, delta_t)
-            brake = .0
-        elif linear_v_error < 0:
-            brake = - self.brake_controller.step(linear_v_error, delta_t)*self.max_decel_torque
-            throttle = .0
-        else:  # Unlikely case
-            throttle = .0
-            brake = .0
-        rospy.logdebug('Real brake={} throttle={}'.format(brake, throttle))
-        throttle = self.throttle_filter.filt(throttle)
-        brake = self.brake_filter.filt(brake)
-        if brake < self.torque_deadband:
-            brake = 0
-        # TODO implement a throttle deadband too?
-        if throttle > 0 and brake > 0:
-            rospy.logdebug('WARNING braking and accelerating at the same time throttle={} brake={}'.format(throttle, brake))
-
-        assert 0 <= throttle <= 1
-        assert 0 <= brake <= self.max_decel_torque
-
-        self.publish(throttle=throttle, brake=brake, steer=steering)
-
-        '''
-        Processing below is kept after self.publish(), in order to minimise delay in propagating steering/throttle/brake
-        commands
-        '''
-
-        processing_time = time.time()-current_time
-
-        # Estimate cross-track error
-        path = self.get_final_waypoints(max_n_points=8)
-        pose_x, pose_y, pose_yaw = self.get_pose()
-        if len(path) > 0 and pose_x is not None:
-            cte = cte_from_waypoints(pose_x, pose_y, pose_yaw, path)
-        else:
-            cte = 0
-
-        # Evaluate more metrics to be reported
-        angular_vel_error = wanted_angular_velocity - current_angular_v
-        avg_processing_time = self.total_time/self.count
-
-        # Write to the log file used for off-line metrics charting and reporting
-        data_msg = '{} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}\n'
-        self.data_out_file.write(data_msg.format(self.count, wanted_velocity, throttle, brake, steering, linear_v_error, angular_vel_error, cte, delta_t, processing_time, avg_processing_time ))
-
-        # Write to ROS log files
-        log_msg = '#{} wanted_velocity={:.4f} throttle={:.4f} brake={:.4f} steer={:.4f} linear_v_error={:.4f} cte={:.4f} delta_t={:.4f} processing_time={:.4f} avg proc time={:.4f}'
-        rospy.logdebug(log_msg.format(self.count, wanted_velocity, throttle, brake, steering, linear_v_error, cte, delta_t, processing_time, avg_processing_time ))
+        self.set_twist(msg.twist)
 
     def current_velocity_cb(self, msg):
         linear = msg.twist.linear.x

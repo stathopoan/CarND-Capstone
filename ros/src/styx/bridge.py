@@ -145,15 +145,12 @@ class Bridge(object):
 
 
     def publish_controls(self, data):
-        """
         steering, throttle, brake = data['steering_angle'], data['throttle'], data['brake']
         self.publishers['steering_report'].publish(self.create_steer(steering))
         self.publishers['throttle_report'].publish(self.create_float(throttle))
         self.publishers['brake_report'].publish(self.create_float(brake))
-        """
 
     def publish_obstacles(self, data):
-        """
         for obs in data['obstacles']:
             pose = self.create_pose(obs[0], obs[1], obs[2])
             self.publishers['obstacle'].publish(pose)
@@ -162,12 +159,9 @@ class Bridge(object):
         header.frame_id = '/world'
         cloud = pcl2.create_cloud_xyz32(header, data['obstacles'])
         self.publishers['obstacle_points'].publish(cloud)
-        """
 
     def publish_lidar(self, data):
-        """
         self.publishers['lidar'].publish(self.create_point_cloud_message(zip(data['lidar_x'], data['lidar_y'], data['lidar_z'])))
-        """
 
     def publish_traffic(self, data):
         x, y, z = data['light_pos_x'], data['light_pos_y'], data['light_pos_z'],
