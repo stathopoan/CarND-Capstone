@@ -333,10 +333,12 @@ if __name__ == '__main__':
 TODO
 ====
 
+** scrivere il programma minimale che riproduce il problema col simulatore
+* debuggare styx/server.py & Co.
 - servono veramente le deep copy?
 - controlla il time-stamp degli eventi in arrivo a twist_cb()
 - e' richiesto fermarsi all'ultimo waypoint della traccia? Chiesto su Slack
-* usare due diversi PID, uno per accelerare ed uno per frenare, con la deadband in mezzo
+* max steer angle? 
 - calcolare la velocita' di crocera in base alla velocita' massima
 - controllare il limite sullo steerin. Che senso ha 8??
 - l'auto potrebbe andare all'indietro? Ovvero avere una velocita' negativa. Considerare di gestirlo.
