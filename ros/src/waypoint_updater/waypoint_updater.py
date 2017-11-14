@@ -141,13 +141,14 @@ def distance(waypoints, wp1, wp2):
     return dist
 
 
-def plan_stop(wps, idx, max_decel):
+def plan_stop(wps, idx, max_decel, speed_limit):
     """
     Alter the speed of given waypoints to ensure the car comes to a full stop around the waypoints of index idx
     :param wps: the given waypoints
     :param idx: the index of the waypoint around which the car must stop
     :param speed: the initial speed of the car, in m/s
     :param max_decel: the maximum deceleration the car is capable of, a negative numer in m/s/s
+    :param speed_limit: the speed limit not be exceeded, in m/s
     """
 
     if idx < 0:
@@ -163,6 +164,8 @@ def plan_stop(wps, idx, max_decel):
         current_speed = (current_speed**2 - 2*max_decel*dist)**.5
         if current_i >= 1:
             current_speed = min(current_speed, wps[current_i-1].twist.twist.linear.x)
+        else:
+            current_speed = min(current_speed, speed_limit)
         wps[current_i].twist.twist.linear.x = current_speed
         current_i -= 1
 
@@ -172,6 +175,8 @@ def plan_stop(wps, idx, max_decel):
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
+
+        self.speed_limit = rospy.get_param('/waypoint_loader/velocity') * 1000 / 3600.  # m/s
 
         ''' Note that subscription to /current_pose is done inside self.waypoints_cb(). No point in receiving pose
         updates before having received the track waypoints. '''
@@ -245,7 +250,7 @@ class WaypointUpdater(object):
 
         if pose_i+LOOKAHEAD_WPS > 750:
             current_vel, _ = self.get_current_velocity()
-            lane.waypoints = plan_stop(lane.waypoints, 750-pose_i, -1)  # TODO 751?
+            lane.waypoints = plan_stop(lane.waypoints, 750-pose_i, -5, self.speed_limit-1.)  # TODO 751?
         if pose_i >= 750:
             lane.waypoints = []
 
