@@ -131,14 +131,14 @@ class DBWNode(object):
         self.twist = None
         self.twist_lock = threading.Lock()
 
-        self.throttle_filter = LowPassFilter(1., 1.)  # fifty-fifty
+        self.throttle_filter = SimpleLowPassFilter(.75)
         self.brake_filter = LowPassFilter(1., 1.)  # fifty-fifty
         self.steering_filter = SimpleLowPassFilter(.25)
 
         self.total_time = .0
         self.count = .0
 
-        throttle_PID = .22, .015, 0.0  # Best so far
+        throttle_PID = .4, .015, 0.0  # Best so far
         brake_PID = .2, .0, .0  # TODO yet to be tuned!
 
         path_to_dir = os.path.expanduser('~/.ros/chart_data')  # Replace ~ with path to user home directory
@@ -157,7 +157,8 @@ class DBWNode(object):
                                             max_lat_accel=max_lat_accel,
                                             max_steer_angle=max_steer_angle)
 
-        self.throttle_controller = PID(throttle_PID[0], throttle_PID[1], throttle_PID[2], mn=0, mx=accel_limit)
+        # self.throttle_controller = PID(throttle_PID[0], throttle_PID[1], throttle_PID[2], mn=0, mx=accel_limit)
+        self.throttle_controller = PID(throttle_PID[0], throttle_PID[1], throttle_PID[2], mn=-1, mx=1)
         self.brake_controller = PID(brake_PID[0], brake_PID[1], brake_PID[2], mn=-1, mx=0)
 
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
@@ -201,29 +202,32 @@ class DBWNode(object):
                     steering = self.steering_filter.filt(steering)
 
                     linear_v_error = wanted_velocity - current_linear_v
-                    if linear_v_error > 0:
-                        throttle = self.throttle_controller.step(linear_v_error, delta_t)
-                        brake = .0
-                    elif linear_v_error < 0:
-                        brake = - self.brake_controller.step(linear_v_error, delta_t) * self.max_decel_torque
-                        throttle = .0
-                    else:  # Unlikely case
-                        throttle = .0
-                        brake = .0
-                    rospy.logdebug('Real brake={} throttle={}'.format(brake, throttle))
-                    throttle = self.throttle_filter.filt(throttle)
-                    brake = self.brake_filter.filt(brake)
-                    if brake < self.torque_deadband:
-                        brake = 0
-                    # TODO implement a throttle deadband too?
-                    if throttle > 0 and brake > 0:
-                        rospy.logdebug(
-                            'WARNING braking and accelerating at the same time throttle={} brake={}'.format(throttle, brake))
+                    throttle = self.throttle_controller.step(linear_v_error, delta_t)
+                    # throttle = self.throttle_filter.filt(throttle)
 
-                    assert 0 <= throttle <= 1
-                    assert 0 <= brake <= self.max_decel_torque
+                    if throttle > 0:
+                        throttle_cmd = throttle
+                        brake_cmd = .0
+                    elif throttle < 0:
+                        throttle_cmd = 0
+                        brake_cmd = - 3*self.max_decel_torque * throttle  # TODO keep tuning this!
+                        if brake_cmd > self.max_decel_torque:  # TODO make it fancier with min() and max()
+                            brake_cmd = self.max_decel_torque
+                        if brake_cmd < self.torque_deadband:
+                            brake_cmd = 0
+                    else:
+                        throttle_cmd = .0
+                        brake_cmd = .0
 
-                    self.publish(throttle=throttle, brake=brake, steer=steering)
+                    if np.isclose(wanted_velocity, .0) and abs(linear_v_error) <= 2:
+                        throttle_cmd = .0
+                        brake_cmd = self.max_decel_torque/3.
+
+
+                    assert 0 <= throttle_cmd <= 1
+                    assert 0 <= brake_cmd <= self.max_decel_torque
+
+                    self.publish(throttle=throttle_cmd, brake=brake_cmd, steer=steering)
 
                     '''
                     Processing below is kept after self.publish(), in order to minimise delay in propagating steering/throttle/brake
@@ -247,13 +251,13 @@ class DBWNode(object):
                     # Write to the log file used for off-line metrics charting and reporting
                     data_msg = '{} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}\n'
                     self.data_out_file.write(
-                        data_msg.format(self.count, wanted_velocity, throttle, brake, steering, linear_v_error,
+                        data_msg.format(self.count, wanted_velocity, throttle_cmd, brake_cmd, steering, linear_v_error,
                                         angular_vel_error, cte, delta_t, processing_time, avg_processing_time))
 
                     # Write to ROS log files
                     log_msg = '#{} wanted_velocity={:.4f} throttle={:.4f} brake={:.4f} steer={:.4f} linear_v_error={:.4f} cte={:.4f} delta_t={:.4f} processing_time={:.4f} avg proc time={:.4f}'
                     rospy.logdebug(
-                        log_msg.format(self.count, wanted_velocity, throttle, brake, steering, linear_v_error, cte, delta_t,
+                        log_msg.format(self.count, wanted_velocity, throttle_cmd, brake_cmd, steering, linear_v_error, cte, delta_t,
                                        processing_time, avg_processing_time))
             rate.sleep()
 
@@ -357,14 +361,11 @@ if __name__ == '__main__':
 TODO
 ====
 
-** scrivere il programma minimale che riproduce il problema col simulatore
-* debuggare styx/server.py & Co.
+* tunare parametro filtro steering
+* max steer angle? 8?
 - servono veramente le deep copy?
 - controlla il time-stamp degli eventi in arrivo a twist_cb()
-- e' richiesto fermarsi all'ultimo waypoint della traccia? Chiesto su Slack
-* max steer angle? 
 - calcolare la velocita' di crocera in base alla velocita' massima
-- controllare il limite sullo steerin. Che senso ha 8??
 - l'auto potrebbe andare all'indietro? Ovvero avere una velocita' negativa. Considerare di gestirlo.
 - considera di prendere il max torque da BrakCmd.TORQUE_MAX
 

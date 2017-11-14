@@ -243,13 +243,11 @@ class WaypointUpdater(object):
             wp.twist.twist.linear.x = 10.11  # Currently setting the speed to this constant value (in m/s).
             lane.waypoints.append(wp)
 
-        """
         if pose_i+LOOKAHEAD_WPS > 750:
             current_vel, _ = self.get_current_velocity()
             lane.waypoints = plan_stop(lane.waypoints, 750-pose_i, -1)  # TODO 751?
         if pose_i >= 750:
             lane.waypoints = []
-        """
 
         self.final_waypoints_pub.publish(lane)
         total_time = time.time() - now
