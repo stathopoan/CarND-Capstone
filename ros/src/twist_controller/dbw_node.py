@@ -99,6 +99,8 @@ class DBWNode(object):
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
+        self.max_steer_angle = max_steer_angle
+
         self.current_linear_velocity = .0
         self.current_yaw_velocity = .0
         self.current_velocity_lock = threading.Lock()
@@ -133,7 +135,7 @@ class DBWNode(object):
 
         self.throttle_filter = SimpleLowPassFilter(.75)
         self.brake_filter = LowPassFilter(1., 1.)  # fifty-fifty
-        self.steering_filter = SimpleLowPassFilter(.25)
+        self.steering_filter = SimpleLowPassFilter(.75)
 
         self.total_time = .0
         self.count = .0
@@ -224,8 +226,9 @@ class DBWNode(object):
                         brake_cmd = self.max_decel_torque/3.
 
 
-                    assert 0 <= throttle_cmd <= 1
+                    assert 0 <= throttle_cmd <= 1  # TODO remove asserts before submission
                     assert 0 <= brake_cmd <= self.max_decel_torque
+                    assert -self.max_steer_angle <= steering <= self.max_steer_angle
 
                     self.publish(throttle=throttle_cmd, brake=brake_cmd, steer=steering)
 
@@ -361,12 +364,10 @@ if __name__ == '__main__':
 TODO
 ====
 
-* tunare parametro filtro steering
-* max steer angle? 8?
 - servono veramente le deep copy?
 - controlla il time-stamp degli eventi in arrivo a twist_cb()
 - calcolare la velocita' di crocera in base alla velocita' massima
-- l'auto potrebbe andare all'indietro? Ovvero avere una velocita' negativa. Considerare di gestirlo.
+* l'auto potrebbe andare all'indietro? Ovvero avere una velocita' negativa. Considerare di gestirlo.
 - considera di prendere il max torque da BrakCmd.TORQUE_MAX
 
 """

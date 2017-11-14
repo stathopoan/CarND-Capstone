@@ -250,7 +250,7 @@ class WaypointUpdater(object):
 
         if pose_i+LOOKAHEAD_WPS > 750:
             current_vel, _ = self.get_current_velocity()
-            lane.waypoints = plan_stop(lane.waypoints, 750-pose_i, -5, self.speed_limit-1.)  # TODO 751?
+            lane.waypoints = plan_stop(lane.waypoints, 750-pose_i, -2, self.speed_limit-1.)  # TODO 751?
         if pose_i >= 750:
             lane.waypoints = []
 
