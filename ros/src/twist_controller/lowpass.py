@@ -29,7 +29,7 @@ class SimpleLowPassFilter(object):
 
     def filt(self, value):
         if self.ready:
-            value = self.weight * value + (1.-self.weight)* value
+            value = self.weight * value + (1.-self.weight)* self.last_value
         else:
             self.ready = True
 

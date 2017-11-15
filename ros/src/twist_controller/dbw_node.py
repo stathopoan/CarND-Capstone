@@ -366,7 +366,8 @@ TODO
 
 - servono veramente le deep copy?
 - controlla il time-stamp degli eventi in arrivo a twist_cb()
-- calcolare la velocita' di crocera in base alla velocita' massima
+* calcolare la velocita' di crocera in base alla velocita' massima, attenzione anche alla velocita' dei waypoint;
+testare a velocita' molto basse!
 * l'auto potrebbe andare all'indietro? Ovvero avere una velocita' negativa. Considerare di gestirlo.
 - considera di prendere il max torque da BrakCmd.TORQUE_MAX
 
