@@ -359,6 +359,7 @@ if __name__ == '__main__':
 TODO
 ====
 
+** tunare i filtri su throttle/brake/steering
 - servono veramente le deep copy?
 - controlla il time-stamp degli eventi in arrivo a twist_cb()
 * calcolare la velocita' di crocera in base alla velocita' massima, attenzione anche alla velocita' dei waypoint;
