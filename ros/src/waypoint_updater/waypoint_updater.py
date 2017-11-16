@@ -176,8 +176,6 @@ class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
 
-        self.speed_limit = rospy.get_param('/waypoint_loader/velocity') * 1000 / 3600.  # m/s
-
         ''' Note that subscription to /current_pose is done inside self.waypoints_cb(). No point in receiving pose
         updates before having received the track waypoints. '''
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -186,7 +184,15 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
+        # The configured speed limit
+        self.speed_limit = rospy.get_param('/waypoint_loader/velocity') * 1000 / 3600.  # m/s
+
+        # The speed limit that will be enforced, lower than the configured speed limit, in order to have a safety margin
+        self.enforced_speed_limit = min(self.speed_limit * .9, self.speed_limit - 1.)
+        if self.enforced_speed_limit <= 0:
+            self.enforced_speed_limit = self.speed_limit * .9
+
+        # The waypoints describing the track and the wanted cruise speed (traffic lights aside)
         self.waypoints = None
 
         ''' Every time a /current_pose message is received, method pose_cb() determines the first track waypoint
@@ -200,6 +206,7 @@ class WaypointUpdater(object):
         self.received_pose_count = 0  # Counts how many car pose updates (/current_pose messages) have been received
         self.previous_pose_cb_time = None  # Time of when the last pose (/current_pose messages) has been received
         self.total_time = .0  # Total time spent in executing pose_cb(), for performance monitoring
+        # Limit the frequency of processing of /current_pose, at most once every these many seconds
         self.min_update_int = .2
 
         self.current_linear_velocity = .0
@@ -234,24 +241,24 @@ class WaypointUpdater(object):
 
         # Determine the index in `self.waypoints` of the first waypoint in front of the car
         pose_i = get_next_waypoint_idx(msg.pose, self.waypoints, self.prev_wp_idx)
-        rospy.logdebug('Next wp index is {}'.format(pose_i))
+        # spy.logdebug('Next wp index is {}'.format(pose_i))
         self.prev_wp_idx = pose_i
 
         # Collect LOOKAHEAD_WPS waypoints starting from that index, and publish them.
-        direction = 1
         lane = Lane()
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time(0)
         for count in xrange(LOOKAHEAD_WPS):
-            i = (pose_i+count*direction) % len(self.waypoints)
+            i = (pose_i+count) % len(self.waypoints)
             wp = self.waypoints[i]
-            wp.twist.twist.linear.x = 10.11  # Currently setting the speed to this constant value (in m/s).
+            # Cap the linear velocity at self.enforced_speed_limit
+            wp.twist.twist.linear.x = min(wp.twist.twist.linear.x, self.enforced_speed_limit)
             lane.waypoints.append(wp)
 
-        if False:
+        if False:  # Set to True if you want the car to stop at the second traffic light (waypoint #750), for testing.
             if pose_i+LOOKAHEAD_WPS > 750:
                 current_vel, _ = self.get_current_velocity()
-                lane.waypoints = plan_stop(lane.waypoints, 750-pose_i, -2, self.speed_limit-1.)  # TODO 751?
+                lane.waypoints = plan_stop(lane.waypoints, 750-pose_i, -2, self.enforced_speed_limit)
             if pose_i >= 750:
                 lane.waypoints = []
 
