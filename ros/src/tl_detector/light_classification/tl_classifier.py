@@ -1,9 +1,12 @@
 from styx_msgs.msg import TrafficLight
+import tensorflow as tf
+import numpy as np
+from real_model import RealModel
 
 class TLClassifier(object):
     def __init__(self):
-        #TODO load classifier
-        pass
+        self.PATH_TO_MODEL = 'models/frozen_inference_graph.pb'
+        self.model = RealModel(self.PATH_TO_MODEL)
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -15,5 +18,5 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        #TODO implement light color prediction
-        return TrafficLight.UNKNOWN
+        # DONE implement light color prediction
+        return self.model.predict(image)
