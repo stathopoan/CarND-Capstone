@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import PoseStamped
-from styx_msgs.msg import Lane, Waypoint
+from geometry_msgs.msg import PoseStamped, TwistStamped
 from std_msgs.msg import Int32
+from styx_msgs.msg import Lane, Waypoint
 import tf
 import math
 import threading
 import time
+
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -23,6 +24,7 @@ as well as to verify your TL classifier.
 '''
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_DISTANCE = 100  # Distance between the car's current pose and the closest waypoint to stop
 
 
 def universal2car_ref(x, y, car_x, car_y, car_yaw):
@@ -132,6 +134,62 @@ def get_next_waypoint_idx(pose, waypoints, starting_idx):
     return wp_i
 
 
+def distance(waypoints, wp1, wp2):
+    dist = 0
+    dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+    for i in range(wp1, wp2+1):
+        dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+        wp1 = i
+    return dist
+
+def calc_distance_to_stop(current_speed, decel):
+    """
+    Calculate the distance required to stop with current speed and desired deceleration
+    """
+    return -(current_speed*current_speed)/(2.0*decel)
+
+
+
+def plan_stop(wps, idx, max_decel, speed_limit):
+    """
+    Alter the speed of given waypoints to ensure the car comes to a full stop around the waypoints of index idx
+    :param wps: the given waypoints
+    :param idx: the index of the waypoint around which the car must stop
+    :param speed: the initial speed of the car, in m/s
+    :param max_decel: the maximum deceleration the car is capable of, a negative numer in m/s/s
+    :param speed_limit: the speed limit not be exceeded, in m/s
+    """
+
+    if idx < 0:
+        return []
+
+    wps = wps[0: idx+1]
+
+    wps[idx].twist.twist.linear.x = 0
+    current_speed = 0
+    current_i = idx-1
+    while current_i >= 0 and (current_i == 0 or current_speed < wps[current_i-1].twist.twist.linear.x):
+        dist = distance(wps, current_i, current_i+1)
+        current_speed = (current_speed**2 - 2*max_decel*dist)**.5
+        if current_i >= 1:
+            current_speed = min(current_speed, wps[current_i-1].twist.twist.linear.x)
+        else:
+            current_speed = min(current_speed, speed_limit)
+        wps[current_i].twist.twist.linear.x = current_speed
+        current_i -= 1
+
+    return wps
+
+def continue_halt(wps):
+    """
+    Set the speed of all waypoints to zero since the car is in halt state
+    :param wps: the given waypoints
+    """
+    for wp in wps:
+       wp.twist.twist.linear.x = 0
+    return wps
+
+
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
@@ -145,7 +203,15 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
+        # The configured speed limit
+        self.speed_limit = rospy.get_param('/waypoint_loader/velocity') * 1000 / 3600.  # m/s
+
+        # The speed limit that will be enforced, lower than the configured speed limit, in order to have a safety margin
+        self.enforced_speed_limit = min(self.speed_limit * .9, self.speed_limit - 1.)
+        if self.enforced_speed_limit <= 0:
+            self.enforced_speed_limit = self.speed_limit * .9
+
+        # The waypoints describing the track and the wanted cruise speed (traffic lights aside)
         self.waypoints = None
 
         ''' Every time a /current_pose message is received, method pose_cb() determines the first track waypoint
@@ -159,6 +225,17 @@ class WaypointUpdater(object):
         self.received_pose_count = 0  # Counts how many car pose updates (/current_pose messages) have been received
         self.previous_pose_cb_time = None  # Time of when the last pose (/current_pose messages) has been received
         self.total_time = .0  # Total time spent in executing pose_cb(), for performance monitoring
+        # Limit the frequency of processing of /current_pose, at most once every these many seconds
+        self.min_update_int = .2
+
+        self.current_linear_velocity = .0
+        self.current_yaw_velocity = .0
+        self.current_velocity_lock = threading.Lock()
+
+	# The index of the waypoint closest to the nearest light
+	self.stop_waypoint = -1
+        self.halt = False
+	self.initialize = True
 
         rospy.spin()
 
@@ -170,11 +247,16 @@ class WaypointUpdater(object):
         lights). TODO update to keep traffic ligths into consideration.
         :param msg: the received message.
         """
+
         # Update time and count information about received poses
         now = time.time()
         delta_t = 0 if self.previous_pose_cb_time is None else now-self.previous_pose_cb_time
-        self.total_time += delta_t
+        if self.previous_pose_cb_time is None:
+            self.previous_pose_cb_time = now
+        if delta_t < self.min_update_int:
+            return
         self.previous_pose_cb_time = now
+        self.total_time += delta_t
         self.received_pose_count += 1 # TODO protect with mutex!
 
         rospy.logdebug('Processing pose #{}; delta_t from previous processing is {}s with average {}s'.format(self.received_pose_count,
@@ -183,18 +265,46 @@ class WaypointUpdater(object):
 
         # Determine the index in `self.waypoints` of the first waypoint in front of the car
         pose_i = get_next_waypoint_idx(msg.pose, self.waypoints, self.prev_wp_idx)
+        # spy.logdebug('Next wp index is {}'.format(pose_i))
         self.prev_wp_idx = pose_i
 
         # Collect LOOKAHEAD_WPS waypoints starting from that index, and publish them.
-        direction = 1
         lane = Lane()
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time(0)
         for count in xrange(LOOKAHEAD_WPS):
-            i = (pose_i+count*direction) % len(self.waypoints)
-            wp =self.waypoints[i]
-            wp.twist.twist.linear.x = 9.  # Currentlys setting the speed to this constant value (in m/s).
+            i = (pose_i+count) % len(self.waypoints)
+            wp = self.waypoints[i]
+            # Cap the linear velocity at self.enforced_speed_limit
+            wp.twist.twist.linear.x = min(wp.twist.twist.linear.x, self.enforced_speed_limit)
             lane.waypoints.append(wp)
+	
+	current_vel, _ = self.get_current_velocity()
+	if (current_vel == 0.0 and self.stop_waypoint != -1 and self.initialize == False):
+	   self.halt = True
+	else:
+	   self.halt = False
+
+	if self.halt:
+           continue_halt(lane.waypoints)
+	elif self.stop_waypoint != -1:
+	   #rospy.logdebug('Current pose idx {}; identified light idx {}; current_vel {}m/s'.format(pose_i, self.stop_waypoint,current_vel))
+	   #if distance(self.waypoints, pose_i, self.stop_waypoint) <= calc_distance_to_stop(current_vel, -2):
+	   if pose_i+LOOKAHEAD_WPS > self.stop_waypoint:
+              lane.waypoints = plan_stop(lane.waypoints, self.stop_waypoint-pose_i, -2, self.enforced_speed_limit)
+
+     
+        self.initialize = False
+	rospy.logdebug('Current pose idx {}; identified light idx {}; current_vel {}m/s'.format(pose_i, self.stop_waypoint,current_vel))
+	
+        '''
+	if False:  # Set to True if you want the car to stop at the second traffic light (waypoint #750), for testing.
+            if pose_i+LOOKAHEAD_WPS > 750:
+                current_vel, _ = self.get_current_velocity()
+                lane.waypoints = plan_stop(lane.waypoints, 750-pose_i, -2, self.enforced_speed_limit)
+            if pose_i >= 750:
+                lane.waypoints = []
+	'''
         self.final_waypoints_pub.publish(lane)
         total_time = time.time() - now
         rospy.logdebug('Time spent in pose_cb: {}s'.format(total_time))
@@ -207,19 +317,29 @@ class WaypointUpdater(object):
         # This callback should be called only once, with the list of waypoints not yet initialised.
         assert self.waypoints is None
 
-        self.waypoints= waypoints.waypoints  # No need to guarantee mutual exclusion in accessing this data member
+        for wp in waypoints.waypoints:
+            wp.twist.twist.linear.x = 9.
+
+        self.waypoints = waypoints.waypoints # No need to guarantee mutual exclusion in accessing this data member
 
         # Now that the waypoints describing the track have been received, it is time to subscribe to pose updates.
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-	rospy.logdebug('msg traffic {}'.format(msg))
-        
+        #rospy.logdebug('Stopping waypoint: {}s'.format(msg))
+	self.stop_waypoint = msg.data if msg.data >= 0 else -1
+	return
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
+
+    def current_velocity_cb(self, msg):  # TODO remove code duplication with DBW node
+        linear = msg.twist.linear.x
+        angular = msg.twist.angular.z
+        self.set_current_velocity(linear=linear, angular=angular)
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
@@ -227,13 +347,18 @@ class WaypointUpdater(object):
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
-    def distance(self, waypoints, wp1, wp2):
-        dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-        for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
-            wp1 = i
-        return dist
+    def set_current_velocity(self, linear, angular):
+        self.current_velocity_lock.acquire()
+        self.current_linear_velocity = linear
+        self.current_yaw_velocity = angular
+        self.current_velocity_lock.release()
+
+    def get_current_velocity(self):
+        self.current_velocity_lock.acquire()
+        linear = self.current_linear_velocity
+        angular = self.current_yaw_velocity
+        self.current_velocity_lock.release()
+        return linear, angular
 
 
 if __name__ == '__main__':
