@@ -278,7 +278,8 @@ class WaypointUpdater(object):
             # Cap the linear velocity at self.enforced_speed_limit
             wp.twist.twist.linear.x = min(wp.twist.twist.linear.x, self.enforced_speed_limit)
             lane.waypoints.append(wp)
-	
+
+	# Get current velocity
 	current_vel, _ = self.get_current_velocity()
 	if (current_vel == 0.0 and self.stop_waypoint != -1 and self.initialize == False):
 	   self.halt = True
@@ -291,11 +292,11 @@ class WaypointUpdater(object):
 	   #rospy.logdebug('Current pose idx {}; identified light idx {}; current_vel {}m/s'.format(pose_i, self.stop_waypoint,current_vel))
 	   #if distance(self.waypoints, pose_i, self.stop_waypoint) <= calc_distance_to_stop(current_vel, -2):
 	   if pose_i+LOOKAHEAD_WPS > self.stop_waypoint:
-              lane.waypoints = plan_stop(lane.waypoints, self.stop_waypoint-pose_i, -2, self.enforced_speed_limit)
+              lane.waypoints = plan_stop(lane.waypoints, self.stop_waypoint-pose_i-1, -2, self.enforced_speed_limit)
 
      
         self.initialize = False
-	rospy.logdebug('Current pose idx {}; identified light idx {}; current_vel {}m/s'.format(pose_i, self.stop_waypoint,current_vel))
+	rospy.logdebug('Current pose idx {}; identified light idx {}; current_vel {}m/s; halt {}'.format(pose_i, self.stop_waypoint,current_vel,self.halt))
 	
         '''
 	if False:  # Set to True if you want the car to stop at the second traffic light (waypoint #750), for testing.
@@ -329,7 +330,7 @@ class WaypointUpdater(object):
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         #rospy.logdebug('Stopping waypoint: {}s'.format(msg))
-	self.stop_waypoint = msg.data if msg.data >= 0 else -1
+	self.stop_waypoint = msg.data
 	return
 
     def obstacle_cb(self, msg):
