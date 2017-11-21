@@ -10,9 +10,6 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
-import numpy as np
-import tensorflow as tf
-
 
 STATE_COUNT_THRESHOLD = 3
 
