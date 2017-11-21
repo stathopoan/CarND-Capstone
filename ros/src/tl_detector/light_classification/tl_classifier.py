@@ -6,7 +6,8 @@ from real_model import RealModel
 class TLClassifier(object):
     def __init__(self):
         self.PATH_TO_MODEL = 'models/frozen_inference_graph.pb'
-        self.model = RealModel(self.PATH_TO_MODEL)
+        # TODO Aruul fix error in line below
+        # self.model = RealModel(self.PATH_TO_MODEL)
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
