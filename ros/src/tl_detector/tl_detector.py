@@ -10,6 +10,9 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import numpy as np
+import tensorflow as tf
+
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -42,7 +45,8 @@ class TLDetector(object):
 
         self.bridge = CvBridge()
         self.light_classifier = TLClassifier()
-        self.listener = tf.TransformListener()
+        # TODO: Aruul fix error in line below
+        # self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
