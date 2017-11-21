@@ -23,7 +23,7 @@ current status in `/vehicle/traffic_lights` message. You can use this message to
 as well as to verify your TL classifier.
 '''
 
-LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 100  # Number of waypoints we will publish. You can change this number
 LOOKAHEAD_DISTANCE = 100  # Distance between the car's current pose and the closest waypoint to stop
 
 
@@ -142,11 +142,7 @@ def distance(waypoints, wp1, wp2):
         wp1 = i
     return dist
 
-def calc_distance_to_stop(current_speed, decel):
-    """
-    Calculate the distance required to stop with current speed and desired deceleration
-    """
-    return -(current_speed*current_speed)/(2.0*decel)
+
 
 
 
@@ -162,8 +158,9 @@ def plan_stop(wps, idx, max_decel, speed_limit):
 
     if idx < 0:
         return []
-
-    wps = wps[0: idx+1]
+    
+    
+    #wps = wps[0: idx+1]
 
     wps[idx].twist.twist.linear.x = 0
     current_speed = 0
@@ -177,6 +174,9 @@ def plan_stop(wps, idx, max_decel, speed_limit):
             current_speed = min(current_speed, speed_limit)
         wps[current_i].twist.twist.linear.x = current_speed
         current_i -= 1
+    
+    for i in range(idx+1,len(wps),1):
+	wps[i].twist.twist.linear.x = 0
 
     return wps
 
@@ -193,6 +193,7 @@ def continue_halt(wps):
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
+	
 
         ''' Note that subscription to /current_pose is done inside self.waypoints_cb(). No point in receiving pose
         updates before having received the track waypoints. '''
@@ -235,9 +236,11 @@ class WaypointUpdater(object):
 	# The index of the waypoint closest to the nearest light
 	self.stop_waypoint = -1
         self.halt = False
-	self.initialize = True
+	self.pose_i = None
 
         rospy.spin()
+
+	
 
     def pose_cb(self, msg):  # This is being called at 50 Hz
         """
@@ -265,6 +268,7 @@ class WaypointUpdater(object):
 
         # Determine the index in `self.waypoints` of the first waypoint in front of the car
         pose_i = get_next_waypoint_idx(msg.pose, self.waypoints, self.prev_wp_idx)
+	self.pose_i = pose_i
         # spy.logdebug('Next wp index is {}'.format(pose_i))
         self.prev_wp_idx = pose_i
 
@@ -276,28 +280,29 @@ class WaypointUpdater(object):
             i = (pose_i+count) % len(self.waypoints)
             wp = self.waypoints[i]
             # Cap the linear velocity at self.enforced_speed_limit
-            wp.twist.twist.linear.x = min(wp.twist.twist.linear.x, self.enforced_speed_limit)
+            #wp.twist.twist.linear.x = min(wp.twist.twist.linear.x, self.enforced_speed_limit)
+	    wp.twist.twist.linear.x = self.enforced_speed_limit	    
             lane.waypoints.append(wp)
-
-	# Get current velocity
-	current_vel, _ = self.get_current_velocity()
-	if (current_vel == 0.0 and self.stop_waypoint != -1 and self.initialize == False):
-	   self.halt = True
-	else:
-	   self.halt = False
-
-	if self.halt:
-           continue_halt(lane.waypoints)
-	elif self.stop_waypoint != -1:
-	   #rospy.logdebug('Current pose idx {}; identified light idx {}; current_vel {}m/s'.format(pose_i, self.stop_waypoint,current_vel))
-	   #if distance(self.waypoints, pose_i, self.stop_waypoint) <= calc_distance_to_stop(current_vel, -2):
-	   if pose_i+LOOKAHEAD_WPS > self.stop_waypoint:
-              lane.waypoints = plan_stop(lane.waypoints, self.stop_waypoint-pose_i-1, -2, self.enforced_speed_limit)
-
-     
-        self.initialize = False
-	rospy.logdebug('Current pose idx {}; identified light idx {}; current_vel {}m/s; halt {}'.format(pose_i, self.stop_waypoint,current_vel,self.halt))
 	
+	# By default the velocity is already set to max
+	# If we are on halt state set velocity to zero
+	#if self.halt:
+	#   lane.waypoints = continue_halt(lane.waypoints)
+	if self.stop_waypoint >= 0:
+	   # Calculate the distance to the nearest stop light
+	   distance_to_light  = distance(self.waypoints, self.pose_i, self.stop_waypoint)
+	   #if (self.stop_waypoint-pose_i)>=0 and (self.stop_waypoint-pose_i)<=1:
+	   #   lane.waypoints = continue_halt(lane.waypoints)
+	   if distance_to_light < self.calc_distance_to_stop(self.enforced_speed_limit, -2):
+	      rospy.logdebug("Traffic light at {}m: Deaccelerating...".format(distance_to_light))
+	      lane.waypoints = plan_stop(lane.waypoints, self.stop_waypoint-pose_i, -2, self.enforced_speed_limit)
+	
+
+     	for ind,wp in enumerate(lane.waypoints):
+	   rospy.logdebug('velocity of #{} wp: {}'.format(ind,wp.twist.twist.linear.x))
+        current_vel, _ = self.get_current_velocity()
+	rospy.logdebug('Current pose idx {}; identified light idx {}; current_vel {}m/s; halt {}; distance_to_light {}'.format(pose_i, self.stop_waypoint,current_vel,self.halt, self.enforced_speed_limit))
+	#rospy.logdebug('velocity of first wp: {}'.format(lane.waypoints.waypoints[0].twist.twist.linear.x))
         '''
 	if False:  # Set to True if you want the car to stop at the second traffic light (waypoint #750), for testing.
             if pose_i+LOOKAHEAD_WPS > 750:
@@ -309,6 +314,7 @@ class WaypointUpdater(object):
         self.final_waypoints_pub.publish(lane)
         total_time = time.time() - now
         rospy.logdebug('Time spent in pose_cb: {}s'.format(total_time))
+	
 
     def waypoints_cb(self, waypoints):
         """
@@ -330,12 +336,20 @@ class WaypointUpdater(object):
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         #rospy.logdebug('Stopping waypoint: {}s'.format(msg))
-	self.stop_waypoint = msg.data
+	self.stop_waypoint = msg.data if msg.data >= 0 else -1
 	return
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
+
+    def calc_distance_to_stop(self,current_speed, decel):
+       """
+       Calculate the distance required to stop with current speed and desired deceleration
+       """
+       assert(decel<0)
+       assert(current_speed>=0 and current_speed<=self.enforced_speed_limit)
+       return -(current_speed*current_speed)/(2.0*decel*0.9)
 
     def current_velocity_cb(self, msg):  # TODO remove code duplication with DBW node
         linear = msg.twist.linear.x
