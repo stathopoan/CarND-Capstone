@@ -18,14 +18,14 @@ import math
 
 this_file_dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(this_file_dir_path+'/../tools')
-from utils import get_next_waypoint_idx, unpack_pose, get_bearing_from_xy
+from utils import get_next_waypoint_idx, unpack_pose, universal2car_ref
 
 
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
     def __init__(self):
-        rospy.init_node('tl_detector')
+        rospy.init_node('tl_detector', log_level=rospy.DEBUG)
 
         self.pose = None
         self.waypoints = None
@@ -151,15 +151,18 @@ class TLDetector(object):
         if self.pose is not None:
             car_pose = self.pose.pose
             car_x, car_y, _ = unpack_pose(car_pose)
-
-            #TODO find the closest visible traffic light (if one exists)
+            #Find the closest visible traffic light (if one exists)
             min_distance = sys.float_info.max
             min_distance_i = -1
             for pos_i, pos in enumerate(stop_line_positions):
                 dist = ((pos[0]-car_x)**2 + (pos[1]-car_y)**2) ** .5
                 if dist < min_distance:
-                    bearing = get_bearing_from_xy(car_pose, pos[0], pos[1])
-                    if abs(bearing) < math.pi / 2.:
+                    # bearing = get_bearing_from_xy(car_pose, pos[0], pos[1])
+                    quaternion = (car_pose.orientation.x, car_pose.orientation.y, car_pose.orientation.z, car_pose.orientation.w)
+                    _, _, car_yaw = tf.transformations.euler_from_quaternion(quaternion)
+                    # rospy.logdebug("TL# {} at {} m with yaw = {} and bearing = {}".format(pos_i, dist, car_yaw/math.pi*180, bearing/math.pi*180))
+                    tl_car_ref_x, _ = universal2car_ref(pos[0], pos[1], car_x, car_y, car_yaw)
+                    if tl_car_ref_x >= .0:
                         min_distance = dist
                         min_distance_i = pos_i
             if min_distance_i >= 0 and min_distance < 50:  # TODO tune this min distance
