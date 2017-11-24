@@ -20,4 +20,6 @@ class TLClassifier(object):
 
         """
         # DONE implement light color prediction
-        return self.model.predict(image)
+        # return self.model.predict(image)
+
+        return TrafficLight.RED  # hard-wired to return red

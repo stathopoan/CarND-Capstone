@@ -8,6 +8,7 @@ import rospy
 import tf
 import numpy as np
 import os
+import sys
 
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
@@ -17,6 +18,10 @@ from twist_controller import GAS_DENSITY
 from geometry_msgs.msg import TwistStamped, PoseStamped
 from styx_msgs.msg import Lane
 from lowpass import SimpleLowPassFilter, LowPassFilter
+
+this_file_dir_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(this_file_dir_path+'/../tools')
+from utils import unpack_pose
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -65,14 +70,6 @@ def cte_from_waypoints(car_x, car_y, car_yaw, waypoints):
     coeffs = np.polyfit(wp_transformed_x, wp_transformed_y, 3)
     cte = np.polyval(coeffs, .0)
     return cte
-
-
-def unpack_pose(pose):  # TODO code duplication!
-    x = pose.pose.position.x
-    y = pose.pose.position.y
-    quaternion = (pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w)
-    _, _, yaw = tf.transformations.euler_from_quaternion(quaternion)
-    return x, y, yaw
 
 
 def get_progressive_file_name(root, ext):
@@ -335,7 +332,7 @@ class DBWNode(object):
 
     def pose_cb(self, msg):
         self.pose_lock.acquire();
-        self.pose_x, self.pose_y, self.pose_yaw = unpack_pose(msg)
+        self.pose_x, self.pose_y, self.pose_yaw = unpack_pose(msg.pose)
         self.pose_lock.release();
 
     def twist_cb(self, msg):  # This is called at 30 Hz

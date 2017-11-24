@@ -1,15 +1,16 @@
 import math
 import tf
 
-def unpack_pose(pose):
+def unpack_pose(the_pose):
     """
     Extracts the three Cartesian coordinates from a geometry_msgs/Pose.
+
     :param pose: the given pose.
     :return: a tuple with the x, y and z coordinates extracted from the pose.
     """
-    x = pose.position.x
-    y = pose.position.y
-    z = pose.position.z
+    x = the_pose.position.x
+    y = the_pose.position.y
+    z = the_pose.position.z
     return x, y, z
 
 def universal2car_ref(x, y, car_x, car_y, car_yaw):
@@ -67,8 +68,13 @@ def get_bearing_from_pose(my_pose, from_pose):
     :param from_pose: the pose whose bearing is taken.
     :return: the computed bearing, in radians.
     """
-    my_x, my_y, _ = unpack_pose(my_pose)
     from_x, from_y, _ = unpack_pose(from_pose)
+    bearing = get_bearing_from_xy(my_pose, from_x, from_y)
+    return bearing
+
+
+def get_bearing_from_xy(my_pose, from_x, from_y):
+    my_x, my_y, _ = unpack_pose(my_pose)
     bearing = math.atan2(from_y-my_y, from_x-my_x)
     return bearing
 

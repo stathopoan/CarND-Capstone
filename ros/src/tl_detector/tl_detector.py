@@ -11,7 +11,14 @@ import tf
 import cv2
 import yaml
 import numpy as np
-import tensorflow as tf
+import tensorflow
+import sys
+import os
+import math
+
+this_file_dir_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(this_file_dir_path+'/../tools')
+from utils import get_next_waypoint_idx, unpack_pose, get_bearing_from_xy
 
 
 STATE_COUNT_THRESHOLD = 3
@@ -24,6 +31,7 @@ class TLDetector(object):
         self.waypoints = None
         self.camera_image = None
         self.lights = []
+        self.prev_wp_idx = 0
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -59,7 +67,7 @@ class TLDetector(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+        self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -74,7 +82,8 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
-        light_wp, state = self.process_traffic_lights()
+        light_wp_i, state = self.process_traffic_lights()
+        # light_wp = self.lights[light_wp_i] if light_wp_i >= 0 else None
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -87,14 +96,14 @@ class TLDetector(object):
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
-            self.last_wp = light_wp
-            self.upcoming_red_light_pub.publish(Int32(light_wp))
+            light_wp_i = light_wp_i if state == TrafficLight.RED else -1
+            self.last_wp = light_wp_i
+            self.upcoming_red_light_pub.publish(Int32(light_wp_i))
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
-    def get_closest_waypoint(self, pose):
+    def get_closest_waypoint(self, pose_stamped):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
@@ -104,8 +113,9 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+
+        self.prev_wp_idx = get_next_waypoint_idx(pose_stamped.pose, self.waypoints, self.prev_wp_idx)
+        return self.prev_wp_idx
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -131,24 +141,35 @@ class TLDetector(object):
             location and color
 
         Returns:
-            int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
+            int: index of waypoint closest to the upcoming stop line for a traffic light (-1 if none exists)
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        light = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
-        if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+        if self.pose is not None:
+            car_pose = self.pose.pose
+            car_x, car_y, _ = unpack_pose(car_pose)
 
-        #TODO find the closest visible traffic light (if one exists)
-
-        if light:
-            state = self.get_light_state(light)
-            return light_wp, state
-        self.waypoints = None
-        return -1, TrafficLight.UNKNOWN
+            #TODO find the closest visible traffic light (if one exists)
+            min_distance = sys.float_info.max
+            min_distance_i = -1
+            for pos_i, pos in enumerate(stop_line_positions):
+                dist = ((pos[0]-car_x)**2 + (pos[1]-car_y)**2) ** .5
+                if dist < min_distance:
+                    bearing = get_bearing_from_xy(car_pose, pos[0], pos[1])
+                    if abs(bearing) < math.pi / 2.:
+                        min_distance = dist
+                        min_distance_i = pos_i
+            if min_distance_i >= 0 and min_distance < 50:  # TODO tune this min distance
+                state = self.get_light_state(stop_line_positions[pos_i])  # TODO is this the right argument to pass?
+                return min_distance_i, state
+            else:
+                return -1, TrafficLight.UNKNOWN
+        # self.waypoints = None
+        else:
+            return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
     try:
