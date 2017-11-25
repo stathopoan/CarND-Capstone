@@ -18,7 +18,7 @@ import math
 
 this_file_dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(this_file_dir_path+'/../tools')
-from utils import get_next_waypoint_idx, unpack_pose, universal2car_ref
+from utils import get_next_waypoint_idx, unpack_pose, universal2car_ref, euler_distance
 
 
 STATE_COUNT_THRESHOLD = 3
@@ -61,6 +61,11 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
+        # [x,y] coordinates of stopping lines before traffic lights
+        self.stop_line_positions = self.config['stop_line_positions']
+        # Indices in self.waypoints of the waypoints closest to the respective stopping lines, as reported in self.stop_line_positions
+        self.stop_line_idxs = None  # Can be initialised only after receiving the list of waypoints, see waypoints_cb()
+
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -68,6 +73,8 @@ class TLDetector(object):
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
+        self.stop_line_idxs = [np.argmin([euler_distance((wp.pose.pose.position.x, wp.pose.pose.position.y), stop_line_pos) for wp in self.waypoints]) for stop_line_pos in self.stop_line_positions]
+        pass
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -167,7 +174,7 @@ class TLDetector(object):
                         min_distance_i = pos_i
             if min_distance_i >= 0 and min_distance < 50:  # TODO tune this min distance
                 state = self.get_light_state(stop_line_positions[pos_i])  # TODO is this the right argument to pass?
-                return min_distance_i, state
+                return self.stop_line_idxs[min_distance_i], state
             else:
                 return -1, TrafficLight.UNKNOWN
         # self.waypoints = None

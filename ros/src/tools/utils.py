@@ -60,6 +60,10 @@ def poses_distance(pose1, pose2):
     distance = ((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)**.5
     return distance
 
+def euler_distance(p1, p2):
+    distance = ((p1[0]-p2[0]) ** 2 + (p1[1]-p2[1]) ** 2) ** .5
+    return distance
+
 
 def get_bearing_from_pose(my_pose, from_pose):
     """
