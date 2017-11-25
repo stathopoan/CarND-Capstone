@@ -5,6 +5,7 @@ import os
 import rospy
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane, Waypoint
+from std_msgs.msg import Int32
 import tf
 import math
 import threading
@@ -12,7 +13,7 @@ import time
 
 this_file_dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(this_file_dir_path+'/../tools')
-from utils import unpack_pose, distance, get_next_waypoint_idx
+from utils import unpack_pose, distance, get_next_waypoint_idx, poses_distance
 
 
 '''
@@ -31,13 +32,13 @@ as well as to verify your TL classifier.
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
 
 
-def plan_stop(wps, idx, max_decel, speed_limit):
+def plan_stop(wps, idx, decel, speed_limit):
     """
     Alter the speed of given waypoints to ensure the car comes to a full stop around the waypoints of index idx
     :param wps: the given waypoints
     :param idx: the index of the waypoint around which the car must stop
     :param speed: the initial speed of the car, in m/s
-    :param max_decel: the maximum deceleration the car is capable of, a negative numer in m/s/s
+    :param decel: the wanted deceleration, a negative numer in m/s/s
     :param speed_limit: the speed limit not be exceeded, in m/s
     """
 
@@ -51,7 +52,7 @@ def plan_stop(wps, idx, max_decel, speed_limit):
     current_i = idx-1
     while current_i >= 0 and (current_i == 0 or current_speed < wps[current_i-1].twist.twist.linear.x):
         dist = distance(wps, current_i, current_i+1)
-        current_speed = (current_speed**2 - 2*max_decel*dist)**.5
+        current_speed = (current_speed**2 - 2*decel*dist)**.5
         if current_i >= 1:
             current_speed = min(current_speed, wps[current_i-1].twist.twist.linear.x)
         else:
@@ -70,7 +71,10 @@ class WaypointUpdater(object):
         updates before having received the track waypoints. '''
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        self.decel_limit = rospy.get_param('/dbw_node/decel_limit', -5)
+        self.accel_limit = rospy.get_param('/deb_node/accel_limit', 1.)
+
+        # DONE: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -103,14 +107,23 @@ class WaypointUpdater(object):
         self.current_yaw_velocity = .0
         self.current_velocity_lock = threading.Lock()
 
+        self.tl = -1
+        self.tl_lock = threading.Lock()
+
         rospy.spin()
+
+    def set_tl(self, value):
+        if self.tl != value:
+            self.tl_lock.acquire()
+            self.tl = value
+            self.tl_lock.release()
+
+    def get_tl(self):
+        return self.tl
 
     def pose_cb(self, msg):  # This is being called at 50 Hz
         """
-        Processes pose update messages. The current implementation takes a list of LOOKAHEAD_WPS waypoints,
-        out of the track waypoints, that are in front of the car, set them at a constant speed, and publishes them for
-        the waypoint_follower to follow. The car will try to follow those waypoints at constant speed (ignoring traffic
-        lights). TODO update to keep traffic ligths into consideration.
+        Processes pose update messages.
         :param msg: the received message.
         """
 
@@ -131,10 +144,11 @@ class WaypointUpdater(object):
 
         # Determine the index in `self.waypoints` of the first waypoint in front of the car
         pose_i = get_next_waypoint_idx(msg.pose, self.waypoints, self.prev_wp_idx)
-        # spy.logdebug('Next wp index is {}'.format(pose_i))
+        # Store the found value; search will start from it at the next iteration, for efficiency
         self.prev_wp_idx = pose_i
 
-        # Collect LOOKAHEAD_WPS waypoints starting from that index, and publish them.
+        # Collect LOOKAHEAD_WPS waypoints starting from that index
+        # TODO as optimization, this part could be skipped if stopping by a red light, as lane.waypoints will be set to [] below
         lane = Lane()
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time(0)
@@ -145,12 +159,30 @@ class WaypointUpdater(object):
             wp.twist.twist.linear.x = min(wp.twist.twist.linear.x, self.enforced_speed_limit)
             lane.waypoints.append(wp)
 
-        if False:  # Set to True if you want the car to stop at the second traffic light (waypoint #750), for testing.
-            if pose_i+LOOKAHEAD_WPS > 750:
-                current_vel, _ = self.get_current_velocity()
-                lane.waypoints = plan_stop(lane.waypoints, 750-pose_i, -2, self.enforced_speed_limit)
-            if pose_i >= 750:
+        # Handle traffic lights
+        tl_wp_i = self.get_tl()
+        if tl_wp_i >=0:  # If there is a red traffic light in front of the car...
+            # ... target to stop one waypoint before it, as a margin of safety
+            tl_wp_i = (tl_wp_i - 1) % len(self.waypoints)
+            # If the waypoint where to stop is within LOOKAHEAD_WPS from the current closest waypoint...
+            if pose_i+LOOKAHEAD_WPS > tl_wp_i:
+                # ... then plan to stop
+                lane.waypoints = plan_stop(lane.waypoints, tl_wp_i-pose_i, -2, self.enforced_speed_limit)  # TODO set the deceleration properly
+            # If already at (or past) the stop waypoint, make sure the car stops and doesn't move
+            if pose_i >= tl_wp_i:
                 lane.waypoints = []
+        '''
+        else:  # If there is no red traffic light in front of the car, make sure lane.waypoints 
+            prev_velocity = lane.waypoints[-1].twist.twist.linear.x if len(lane.waypoints) > 0 else .0
+            while len(lane.waypoints) < LOOKAHEAD_WPS:
+                i = (pose_i + len(lane.waypoints) + 1) % len(self.waypoints)
+                wp = self.waypoints[i]
+                dist = distance(self.waypoints, i, (i-1) % len(self.waypoints))
+                wp.twist.twist.linear.x = (prev_velocity**2 + 2*self.accel_limit*dist)**.5
+                wp.twist.twist.linear.x = min(wp.twist.twist.linear.x, self.enforced_speed_limit, self.waypoints[i].twist.twist.linear.x)
+                lane.waypoints.append(wp)
+            
+        '''
 
         self.final_waypoints_pub.publish(lane)
         total_time = time.time() - now
@@ -172,10 +204,11 @@ class WaypointUpdater(object):
         # Now that the waypoints describing the track have been received, it is time to subscribe to pose updates.
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        # DONE: Callback for /traffic_waypoint message. Implement
+        self.set_tl(msg.data)
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later

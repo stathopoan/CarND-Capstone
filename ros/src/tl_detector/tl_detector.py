@@ -74,7 +74,6 @@ class TLDetector(object):
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
         self.stop_line_idxs = [np.argmin([euler_distance((wp.pose.pose.position.x, wp.pose.pose.position.y), stop_line_pos) for wp in self.waypoints]) for stop_line_pos in self.stop_line_positions]
-        pass
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
