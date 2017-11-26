@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="580cb54f-85b1-4154-8e01-88102416b8f1" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/models/frozen_inference_graph.pb" afterPath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/models/frozen_inference_graph.pb" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/models/model.ckpt.data-00000-of-00001" afterPath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/models/model.ckpt.data-00000-of-00001" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/classifierTest/tl_classifier.ipynb" afterPath="$PROJECT_DIR$/classifierTest/tl_classifier.ipynb" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/tl_classifier.py" afterPath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/tl_classifier.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ros/src/tl_detector/tl_detector.py" afterPath="$PROJECT_DIR$/ros/src/tl_detector/tl_detector.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -31,7 +31,7 @@
       <file leaf-file-name="waypoint_updater.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ros/src/waypoint_updater/waypoint_updater.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="717">
+            <state relative-caret-position="3400">
               <caret line="145" column="32" lean-forward="false" selection-start-line="145" selection-start-column="32" selection-end-line="145" selection-end-column="32" />
               <folding>
                 <element signature="e#23#33#0" expanded="true" />
@@ -40,11 +40,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="tl_detector.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="tl_detector.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/tl_detector.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="250">
-              <caret line="55" column="0" lean-forward="false" selection-start-line="55" selection-start-column="0" selection-end-line="55" selection-end-column="0" />
+            <state relative-caret-position="292">
+              <caret line="25" column="16" lean-forward="false" selection-start-line="25" selection-start-column="6" selection-end-line="25" selection-end-column="16" />
               <folding>
                 <element signature="e#22#34#0" expanded="true" />
               </folding>
@@ -52,11 +52,21 @@
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="faster_rcnn_resnet101_sim.config" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Configs/faster_rcnn_resnet101_sim.config">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="200">
+              <caret line="8" column="19" lean-forward="false" selection-start-line="8" selection-start-column="19" selection-end-line="8" selection-end-column="19" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="tl_classifier.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/light_classification/tl_classifier.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="200">
-              <caret line="11" column="47" lean-forward="true" selection-start-line="11" selection-start-column="47" selection-end-line="11" selection-end-column="47" />
+            <state relative-caret-position="219">
+              <caret line="10" column="76" lean-forward="false" selection-start-line="10" selection-start-column="76" selection-end-line="10" selection-end-column="76" />
               <folding>
                 <element signature="e#0#38#0" expanded="true" />
               </folding>
@@ -64,11 +74,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="real_model.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="real_model.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/light_classification/real_model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="250">
-              <caret line="10" column="20" lean-forward="true" selection-start-line="10" selection-start-column="20" selection-end-line="10" selection-end-column="20" />
+            <state relative-caret-position="175">
+              <caret line="10" column="20" lean-forward="false" selection-start-line="10" selection-start-column="20" selection-end-line="10" selection-end-column="20" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -76,31 +86,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="frozen_inference_graph.pb" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/light_classification/models/frozen_inference_graph.pb">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="listener.py" pinned="false" current-in-tab="false">
         <entry file="file:///opt/ros/kinetic/lib/python2.7/dist-packages/tf/listener.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="889">
+            <state relative-caret-position="8900">
               <caret line="364" column="8" lean-forward="false" selection-start-line="364" selection-start-column="8" selection-end-line="364" selection-end-column="8" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="topics.py" pinned="false" current-in-tab="false">
-        <entry file="file:///opt/ros/kinetic/lib/python2.7/dist-packages/rospy/topics.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="21425">
-              <caret line="858" column="8" lean-forward="false" selection-start-line="858" selection-start-column="8" selection-end-line="858" selection-end-column="8" />
               <folding />
             </state>
           </provider>
@@ -132,8 +122,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>assert</find>
-      <find>plan_stop</find>
       <find>simplelo</find>
       <find>speed</find>
       <find>brake_filter</find>
@@ -162,9 +150,12 @@
       <find>pose.</find>
       <find>.pose</find>
       <find>aruul</find>
+      <find>stop_line_positions</find>
+      <find>faster_rcnn</find>
     </findStrings>
     <dirStrings>
       <dir>$PROJECT_DIR$/ros/src</dir>
+      <dir>$PROJECT_DIR$</dir>
     </dirStrings>
   </component>
   <component name="Git.Settings">
@@ -192,7 +183,7 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="7">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="1969" />
     <option name="y" value="-4" />
     <option name="width" value="2511" />
@@ -214,7 +205,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
@@ -222,6 +212,11 @@
             <path>
               <item name="CarND-Capstone-tl-detector-2" type="b2602c69:ProjectViewProjectNode" />
               <item name="CarND-Capstone-tl-detector-2" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="CarND-Capstone-tl-detector-2" type="b2602c69:ProjectViewProjectNode" />
+              <item name="CarND-Capstone-tl-detector-2" type="462c0819:PsiDirectoryNode" />
+              <item name="Configs" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="CarND-Capstone-tl-detector-2" type="b2602c69:ProjectViewProjectNode" />
@@ -311,6 +306,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -542,12 +538,13 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="1969" y="-4" width="2513" height="1452" extended-state="7" />
+    <frame x="1969" y="-4" width="2511" height="1444" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.279706" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.28297263" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3294025" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3294025" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.3294025" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3294025" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.30031446" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
@@ -561,9 +558,11 @@
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3294025" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
+  </component>
+  <component name="UnknownFeatures">
+    <option featureType="com.intellij.fileTypeFactory" implementationName="*.config" />
   </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
@@ -578,13 +577,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/ros/src/tools/chart.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="10" column="16" lean-forward="false" selection-start-line="10" selection-start-column="16" selection-end-line="10" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ros/src/waypoint_updater/launch/waypoint_updater.launch">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -834,7 +826,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="19250">
           <caret line="790" column="0" lean-forward="false" selection-start-line="790" selection-start-column="0" selection-end-line="790" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -842,7 +833,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="18825">
           <caret line="753" column="0" lean-forward="false" selection-start-line="753" selection-start-column="0" selection-end-line="753" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -850,7 +840,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="4550">
           <caret line="184" column="0" lean-forward="false" selection-start-line="184" selection-start-column="0" selection-end-line="184" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -899,19 +888,9 @@
     </entry>
     <entry file="file:///opt/ros/kinetic/lib/python2.7/dist-packages/tf/listener.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="889">
+        <state relative-caret-position="8900">
           <caret line="364" column="8" lean-forward="false" selection-start-line="364" selection-start-column="8" selection-end-line="364" selection-end-column="8" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ros/src/waypoint_updater/waypoint_updater.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="717">
-          <caret line="145" column="32" lean-forward="false" selection-start-line="145" selection-start-column="32" selection-end-line="145" selection-end-column="32" />
-          <folding>
-            <element signature="e#23#33#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -923,32 +902,50 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/tl_detector.py">
+    <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/light_classification/real_model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="250">
-          <caret line="55" column="0" lean-forward="false" selection-start-line="55" selection-start-column="0" selection-end-line="55" selection-end-column="0" />
+        <state relative-caret-position="175">
+          <caret line="10" column="20" lean-forward="false" selection-start-line="10" selection-start-column="20" selection-end-line="10" selection-end-column="20" />
           <folding>
-            <element signature="e#22#34#0" expanded="true" />
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ros/src/waypoint_updater/waypoint_updater.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3400">
+          <caret line="145" column="32" lean-forward="false" selection-start-line="145" selection-start-column="32" selection-end-line="145" selection-end-column="32" />
+          <folding>
+            <element signature="e#23#33#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/light_classification/tl_classifier.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="200">
-          <caret line="11" column="47" lean-forward="true" selection-start-line="11" selection-start-column="47" selection-end-line="11" selection-end-column="47" />
+        <state relative-caret-position="219">
+          <caret line="10" column="76" lean-forward="false" selection-start-line="10" selection-start-column="76" selection-end-line="10" selection-end-column="76" />
           <folding>
             <element signature="e#0#38#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/light_classification/real_model.py">
+    <entry file="file://$PROJECT_DIR$/Configs/faster_rcnn_resnet101_sim.config">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="250">
-          <caret line="10" column="20" lean-forward="true" selection-start-line="10" selection-start-column="20" selection-end-line="10" selection-end-column="20" />
+        <state relative-caret-position="200">
+          <caret line="8" column="19" lean-forward="false" selection-start-line="8" selection-start-column="19" selection-end-line="8" selection-end-column="19" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/tl_detector.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="292">
+          <caret line="25" column="16" lean-forward="false" selection-start-line="25" selection-start-column="6" selection-end-line="25" selection-end-column="16" />
           <folding>
-            <element signature="e#0#23#0" expanded="true" />
+            <element signature="e#22#34#0" expanded="true" />
           </folding>
         </state>
       </provider>

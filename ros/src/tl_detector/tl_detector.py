@@ -33,19 +33,6 @@ class TLDetector(object):
         self.lights = []
         self.prev_wp_idx = 0
 
-        sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-
-        '''
-        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
-        helps you acquire an accurate ground truth data source for the traffic light
-        classifier by sending the current color state of all traffic lights in the
-        simulator. When testing on the vehicle, the color state will not be available. You'll need to
-        rely on the position of the light and the camera image to predict it.
-        '''
-        sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
-
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
 
@@ -64,6 +51,19 @@ class TLDetector(object):
         self.stop_line_positions = self.config['stop_line_positions']
         # Indices in self.waypoints of the waypoints closest to the respective stopping lines, as reported in self.stop_line_positions
         self.stop_line_idxs = None  # Can be initialised only after receiving the list of waypoints, see waypoints_cb()
+
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+
+        '''
+        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
+        helps you acquire an accurate ground truth data source for the traffic light
+        classifier by sending the current color state of all traffic lights in the
+        simulator. When testing on the vehicle, the color state will not be available. You'll need to
+        rely on the position of the light and the camera image to predict it.
+        '''
+        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
+        rospy.Subscriber('/image_color', Image, self.image_cb)
 
         rospy.spin()
 
