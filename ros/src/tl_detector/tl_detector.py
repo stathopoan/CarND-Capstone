@@ -88,7 +88,6 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp_i, state = self.process_traffic_lights()
-        # light_wp = self.lights[light_wp_i] if light_wp_i >= 0 else None
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -175,7 +174,6 @@ class TLDetector(object):
                 return self.stop_line_idxs[min_distance_i], state
             else:
                 return -1, TrafficLight.UNKNOWN
-        # self.waypoints = None
         else:
             return -1, TrafficLight.UNKNOWN
 

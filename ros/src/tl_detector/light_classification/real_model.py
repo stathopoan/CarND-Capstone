@@ -23,7 +23,9 @@ class RealModel(object):
             self.d_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
             self.d_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
             self.num_d = self.detection_graph.get_tensor_by_name('num_detections:0')
-        self.sess = tf.Session(graph=self.detection_graph)
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        self.sess = tf.Session(graph=self.detection_graph, config=config)
 
     def predict(self, img):
         detection = TrafficLight.UNKNOWN
