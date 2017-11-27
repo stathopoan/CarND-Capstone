@@ -62,8 +62,9 @@ class TLDetector(object):
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
         rely on the position of the light and the camera image to predict it.
         '''
-        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        rospy.Subscriber('/image_color', Image, self.image_cb)
+        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)  # TODO do we actually need this?
+        ''' Subscription to /image_color is inside self.waypoints_cb(), as we need the list of track waypoints before
+        being able to process messages from /image_color'''
 
         rospy.spin()
 
@@ -73,6 +74,7 @@ class TLDetector(object):
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
         self.stop_line_idxs = [np.argmin([euler_distance((wp.pose.pose.position.x, wp.pose.pose.position.y), stop_line_pos) for wp in self.waypoints]) for stop_line_pos in self.stop_line_positions]
+        rospy.Subscriber('/image_color', Image, self.image_cb)
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -88,6 +90,7 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp_i, state = self.process_traffic_lights()
+        rospy.logdebug("light_wp_i={} state={}".format(light_wp_i, state))
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -169,7 +172,8 @@ class TLDetector(object):
                     if tl_car_ref_x >= .0:
                         min_distance = dist
                         min_distance_i = pos_i
-            if min_distance_i >= 0 and min_distance < 50:  # TODO tune this min distance
+            rospy.logdebug('min_distance_i={} min_distance={}'.format(min_distance_i, min_distance))
+            if min_distance_i >= 0 and min_distance < 100:  # TODO tune this min distance
                 state = self.get_light_state(stop_line_positions[pos_i])  # TODO is this the right argument to pass?
                 return self.stop_line_idxs[min_distance_i], state
             else:

@@ -163,7 +163,7 @@ class WaypointUpdater(object):
         tl_wp_i = self.get_tl()
         if tl_wp_i >=0:  # If there is a red traffic light in front of the car...
             # ... target to stop one waypoint before it, as a margin of safety
-            tl_wp_i = (tl_wp_i - 1) % len(self.waypoints)
+            tl_wp_i = (tl_wp_i - 4) % len(self.waypoints)
             # If the waypoint where to stop is within LOOKAHEAD_WPS from the current closest waypoint...
             if pose_i+LOOKAHEAD_WPS > tl_wp_i:
                 # ... then plan to stop
