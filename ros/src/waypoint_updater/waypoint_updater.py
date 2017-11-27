@@ -36,7 +36,7 @@ def plan_stop(wps, idx, decel, speed_limit):
     """
     Alter the speed of given waypoints to ensure the car comes to a full stop around the waypoints of index idx
     :param wps: the given waypoints
-    :param idx: the index of the waypoint around which the car must stop
+    :param idx: the index of the waypoint within wps where the car must stop
     :param speed: the initial speed of the car, in m/s
     :param decel: the wanted deceleration, a negative numer in m/s/s
     :param speed_limit: the speed limit not be exceeded, in m/s
@@ -113,10 +113,9 @@ class WaypointUpdater(object):
         rospy.spin()
 
     def set_tl(self, value):
-        if self.tl != value:
-            self.tl_lock.acquire()
-            self.tl = value
-            self.tl_lock.release()
+        self.tl_lock.acquire()
+        self.tl = value
+        self.tl_lock.release()
 
     def get_tl(self):
         return self.tl
@@ -145,7 +144,7 @@ class WaypointUpdater(object):
         # Determine the index in `self.waypoints` of the first waypoint in front of the car
         pose_i = get_next_waypoint_idx(msg.pose, self.waypoints, self.prev_wp_idx)
         # Store the found value; search will start from it at the next iteration, for efficiency
-        self.prev_wp_idx = pose_i
+        self.prev_wp_idx = max(pose_i, self.prev_wp_idx)   # Cannot go backward!
 
         # Collect LOOKAHEAD_WPS waypoints starting from that index
         # TODO as optimization, this part could be skipped if stopping by a red light, as lane.waypoints will be set to [] below
@@ -161,16 +160,18 @@ class WaypointUpdater(object):
 
         # Handle traffic lights
         tl_wp_i = self.get_tl()
+        rospy.logdebug("Getting tl_wp_i={}".format(tl_wp_i))
         if tl_wp_i >=0:  # If there is a red traffic light in front of the car...
-            # ... target to stop one waypoint before it, as a margin of safety
-            tl_wp_i = (tl_wp_i - 4) % len(self.waypoints)
-            # If the waypoint where to stop is within LOOKAHEAD_WPS from the current closest waypoint...
-            if pose_i+LOOKAHEAD_WPS > tl_wp_i:
-                # ... then plan to stop
-                lane.waypoints = plan_stop(lane.waypoints, tl_wp_i-pose_i, -2, self.enforced_speed_limit)  # TODO set the deceleration properly
+            # ... target to stop a couple waypoints before it, as a margin of safety
+            # tl_wp_i = (tl_wp_i - 1) % len(self.waypoints)
             # If already at (or past) the stop waypoint, make sure the car stops and doesn't move
             if pose_i >= tl_wp_i:
                 lane.waypoints = []
+            # If the waypoint where to stop is within LOOKAHEAD_WPS from the current closest waypoint...
+            elif pose_i+LOOKAHEAD_WPS > tl_wp_i:
+                # ... then plan to stop
+                lane.waypoints = plan_stop(lane.waypoints, tl_wp_i-pose_i, -2, self.enforced_speed_limit)  # TODO set the deceleration properly
+
         '''
         else:  # If there is no red traffic light in front of the car, make sure lane.waypoints 
             prev_velocity = lane.waypoints[-1].twist.twist.linear.x if len(lane.waypoints) > 0 else .0

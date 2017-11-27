@@ -21,7 +21,7 @@ sys.path.append(this_file_dir_path+'/../tools')
 from utils import get_next_waypoint_idx, unpack_pose, universal2car_ref, euler_distance
 
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 2
 
 class TLDetector(object):
     def __init__(self):
@@ -74,6 +74,7 @@ class TLDetector(object):
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
         self.stop_line_idxs = [np.argmin([euler_distance((wp.pose.pose.position.x, wp.pose.pose.position.y), stop_line_pos) for wp in self.waypoints]) for stop_line_pos in self.stop_line_positions]
+        # self.stop_line_idxs = [ (idx - 3) % len(self.waypoints) for idx in exact_stop_line_idxs]  # Take a margin of 3
         rospy.Subscriber('/image_color', Image, self.image_cb)
 
     def traffic_cb(self, msg):
@@ -161,18 +162,16 @@ class TLDetector(object):
             #Find the closest visible traffic light (if one exists)
             min_distance = sys.float_info.max
             min_distance_i = -1
+            quaternion = (car_pose.orientation.x, car_pose.orientation.y, car_pose.orientation.z, car_pose.orientation.w)
+            _, _, car_yaw = tf.transformations.euler_from_quaternion(quaternion)
             for pos_i, pos in enumerate(stop_line_positions):
                 dist = ((pos[0]-car_x)**2 + (pos[1]-car_y)**2) ** .5
                 if dist < min_distance:
-                    # bearing = get_bearing_from_xy(car_pose, pos[0], pos[1])
-                    quaternion = (car_pose.orientation.x, car_pose.orientation.y, car_pose.orientation.z, car_pose.orientation.w)
-                    _, _, car_yaw = tf.transformations.euler_from_quaternion(quaternion)
-                    # rospy.logdebug("TL# {} at {} m with yaw = {} and bearing = {}".format(pos_i, dist, car_yaw/math.pi*180, bearing/math.pi*180))
                     tl_car_ref_x, _ = universal2car_ref(pos[0], pos[1], car_x, car_y, car_yaw)
-                    if tl_car_ref_x >= .0:
+                    if tl_car_ref_x >= -2:  # TODO tune this margin (0 = no margin)
                         min_distance = dist
                         min_distance_i = pos_i
-            rospy.logdebug('min_distance_i={} min_distance={}'.format(min_distance_i, min_distance))
+            rospy.logdebug('min_distance_i={} min_distance={}\n'.format(min_distance_i, min_distance))
             if min_distance_i >= 0 and min_distance < 100:  # TODO tune this min distance
                 state = self.get_light_state(stop_line_positions[pos_i])  # TODO is this the right argument to pass?
                 return self.stop_line_idxs[min_distance_i], state

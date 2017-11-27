@@ -44,7 +44,7 @@ class RealModel(object):
                 if scores[i] > best:
                     sign = classes[i]
                     best = scores[i]
-            if sign is None:
+            if sign is None or best < self.prob_thr:
                 detection = TrafficLight.UNKNOWN
             elif sign == self.GREEN:
                 detection = TrafficLight.GREEN
@@ -52,7 +52,7 @@ class RealModel(object):
                 detection = TrafficLight.RED
             elif sign == self.YELLOW:
                 detection = TrafficLight.YELLOW
-            rospy.logdebug('detection={} best={}'.format(detection, best))
+            rospy.logdebug('detection={} best={} sign={}'.format(detection, best, sign))
             return detection
 
 

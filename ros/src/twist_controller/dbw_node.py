@@ -189,7 +189,9 @@ class DBWNode(object):
                 '''
                 twist = self.get_twist()
                 if self.get_dbw_enabled() and twist is not None:
-                    wanted_velocity = twist.linear.x
+                    if twist.linear.x < 0:
+                        rospy.logdebug("Negative velocity in twist command: twist.linear.x={}".format(twist.linear.x))
+                    wanted_velocity = abs(twist.linear.x)
                     wanted_angular_velocity = twist.angular.z
                     current_linear_v, current_angular_v = self.get_current_velocity()
                     steering = self.yaw_controller.get_steering(linear_velocity=wanted_velocity,
@@ -355,6 +357,16 @@ if __name__ == '__main__':
 """
 TODO
 ====
+
++ anticipate all TLs by a few meters
++ correctly set deceleration
++ test with video recording, ensure acceleration is robust
++ test with lower speed limits
++ check/lower frequency of TL detection
++ test without GPU
++ should it stop with a yellow light?
++ check all TODOs
++ fix the way for TL detection to warm-up
 
 ** tunare i filtri su throttle/brake/steering
 - servono veramente le deep copy?
