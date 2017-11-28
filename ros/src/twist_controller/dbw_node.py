@@ -5,19 +5,18 @@ import threading
 import time
 import copy
 import rospy
-import tf
 import numpy as np
 import os
 import sys
 
 from std_msgs.msg import Bool
-from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
+from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd
 from yaw_controller import YawController
 from pid import PID
 from twist_controller import GAS_DENSITY
 from geometry_msgs.msg import TwistStamped, PoseStamped
 from styx_msgs.msg import Lane
-from lowpass import SimpleLowPassFilter, LowPassFilter
+from lowpass import SimpleLowPassFilter
 
 this_file_dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(this_file_dir_path+'/../tools')
@@ -96,6 +95,8 @@ class DBWNode(object):
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
+        self.speed_limit = rospy.get_param('/waypoint_loader/velocity') * 1000 / 3600.  # m/s
+
         self.max_steer_angle = max_steer_angle
 
         self.current_linear_velocity = .0
@@ -140,7 +141,6 @@ class DBWNode(object):
         f_name = get_progressive_file_name(path_to_dir, 'txt')
         self.data_out_file = open(f_name, 'w')
         assert self.data_out_file is not None
-        rospy.logdebug('Current dir is {}'.format(cwd))
         rospy.loginfo('Writing performance data to file {}'.format(f_name))
         # Write headers for file
         self.data_out_file.write(
@@ -191,7 +191,11 @@ class DBWNode(object):
                 if self.get_dbw_enabled() and twist is not None:
                     if twist.linear.x < 0:
                         rospy.logdebug("Negative velocity in twist command: twist.linear.x={}".format(twist.linear.x))
-                    wanted_velocity = abs(twist.linear.x)
+                    if np.isclose(twist.linear.x, .0) and not np.isclose(twist.angular.z, .0):
+                        rospy.logdebug("Null velocity {} with non null angular velocity {} in twist command".format(twist.linear.x, twist.angular.z))
+                        wanted_velocity = self.speed_limit * .5
+                    else:
+                        wanted_velocity = abs(twist.linear.x)
                     wanted_angular_velocity = twist.angular.z
                     current_linear_v, current_angular_v = self.get_current_velocity()
                     steering = self.yaw_controller.get_steering(linear_velocity=wanted_velocity,
@@ -254,12 +258,15 @@ class DBWNode(object):
                         data_msg.format(self.count, wanted_velocity, throttle_cmd, brake_cmd, steering, linear_v_error,
                                         angular_vel_error, cte, delta_t, processing_time, avg_processing_time))
 
+                    """
                     # Write to ROS log files
                     log_msg = '#{} wanted_velocity={:.4f} throttle={:.4f} brake={:.4f} steer={:.4f} linear_v_error={:.4f} cte={:.4f} delta_t={:.4f} processing_time={:.4f} avg proc time={:.4f}'
                     rospy.logdebug(
                         log_msg.format(self.count, wanted_velocity, throttle_cmd, brake_cmd, steering, linear_v_error,
                                        cte, delta_t,
                                        processing_time, avg_processing_time))
+                    """
+
             rate.sleep()
 
     def set_twist(self, twist):
@@ -336,9 +343,9 @@ class DBWNode(object):
         return pose
 
     def pose_cb(self, msg):
-        self.pose_lock.acquire();
+        self.pose_lock.acquire()
         self.pose_x, self.pose_y, self.pose_yaw = unpack_pose(msg.pose)
-        self.pose_lock.release();
+        self.pose_lock.release()
 
     def twist_cb(self, msg):  # This is called at 30 Hz
         self.set_twist(msg.twist)
@@ -347,10 +354,10 @@ class DBWNode(object):
         linear = msg.twist.linear.x
         angular = msg.twist.angular.z
         self.set_current_velocity(linear=linear, angular=angular)
+        if linear > self.speed_limit:
+            rospy.logdebug("Current speed {} exceeds speed limit {}".format(linear, self.speed_limit))
 
     def DBW_enabled_cb(self, msg):
-        rospy.logdebug('Received emable DBW')
-        rospy.logdebug(msg)
         self.set_dbw_enabled(msg.data)
 
 

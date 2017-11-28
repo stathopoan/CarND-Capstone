@@ -4,16 +4,14 @@ import sys
 import os
 import rospy
 from geometry_msgs.msg import PoseStamped, TwistStamped
-from styx_msgs.msg import Lane, Waypoint
+from styx_msgs.msg import Lane
 from std_msgs.msg import Int32, Bool
-import tf
-import math
 import threading
 import time
 
 this_file_dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(this_file_dir_path+'/../tools')
-from utils import unpack_pose, distance, get_next_waypoint_idx, poses_distance
+from utils import distance, get_next_waypoint_idx, poses_distance
 
 
 '''
@@ -102,7 +100,6 @@ def plan_stop(wps, idx, min_decel, max_decel, speed_limit):
     return wps
 
 
-
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
@@ -114,17 +111,13 @@ class WaypointUpdater(object):
         self.decel_limit = rospy.get_param('/dbw_node/decel_limit', -5)
         self.accel_limit = rospy.get_param('/deb_node/accel_limit', 1.)
 
-        # DONE: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # The configured speed limit
         self.speed_limit = rospy.get_param('/waypoint_loader/velocity') * 1000 / 3600.  # m/s
 
         # The speed limit that will be enforced, lower than the configured speed limit, in order to have a safety margin
-        self.enforced_speed_limit = min(self.speed_limit * .9, self.speed_limit - 1.)
-        if self.enforced_speed_limit <= 0:
-            self.enforced_speed_limit = self.speed_limit * .9
+        self.enforced_speed_limit = self.speed_limit * .9
 
         # The waypoints describing the track and the wanted cruise speed (traffic lights aside)
         self.waypoints = None
@@ -206,9 +199,9 @@ class WaypointUpdater(object):
             might send out a twist command with negative or null linear speed to try to reach it, messing up the DBW;
             therefore, if the first waypoint is too close, skip to the next one. Without this fix, the car might
             remain still after a traffic light turned green. '''
-            dist_from_first_wp = poses_distance(msg.pose, self.waypoints[pose_i].pose.pose)
-            if dist_from_first_wp < .6:
-                pose_i = (pose_i + 1) % len(self.waypoints)
+            # dist_from_first_wp = poses_distance(msg.pose, self.waypoints[pose_i].pose.pose)
+            # if dist_from_first_wp < .6:
+            # pose_i = pose_i + 1
 
             for count in xrange(LOOKAHEAD_WPS):
                 i = pose_i+count

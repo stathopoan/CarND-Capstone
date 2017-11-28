@@ -1,4 +1,4 @@
-from math import atan, asin
+from math import atan
 
 
 class YawController(object):
