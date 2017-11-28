@@ -32,7 +32,7 @@ as well as to verify your TL classifier.
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
 
 
-def plan_stop(wps, idx, decel, speed_limit):
+def plan_stop2(wps, idx, decel, speed_limit):
     """
     Alter the speed of given waypoints to ensure the car comes to a full stop around the waypoints of index idx
     :param wps: the given waypoints
@@ -61,6 +61,46 @@ def plan_stop(wps, idx, decel, speed_limit):
         current_i -= 1
 
     return wps
+
+def plan_stop(wps, idx, min_decel, max_decel, speed_limit):
+    """
+    Alter the speed of given waypoints to ensure the car comes to a full stop around the waypoints of index idx
+    :param wps: the given waypoints
+    :param idx: the index of the waypoint within wps where the car must stop
+    :param speed: the initial speed of the car, in m/s
+    :param decel: the wanted deceleration, a negative numer in m/s/s
+    :param speed_limit: the speed limit not be exceeded, in m/s
+    """
+
+    if idx < 0:
+        return []
+
+    wps = wps[0: idx+1]
+
+    # Calculate the acceleration needed to stop the car at the last waypoint in wps
+    path_length = distance(wps, 0, len(wps)-1)
+    a = -wps[0].twist.twist.linear.x**2/(2*path_length)  # From the kinematic equations
+
+    ''' Constrain the acceleration to be within min_decel and max_decel (note, a, min_decel and
+    max_decel are all supposed to be negative, being decelerations) '''
+    decel = max(a, max_decel)
+    decel = min(decel, min_decel)
+
+    wps[idx].twist.twist.linear.x = 0
+    current_speed = 0
+    current_i = idx-1
+    while current_i >= 0 and (current_i == 0 or current_speed < wps[current_i-1].twist.twist.linear.x):
+        dist = distance(wps, current_i, current_i+1)
+        current_speed = (current_speed**2 - 2*decel*dist)**.5
+        if current_i >= 1:
+            current_speed = min(current_speed, wps[current_i-1].twist.twist.linear.x)
+        else:
+            current_speed = min(current_speed, speed_limit)
+        wps[current_i].twist.twist.linear.x = current_speed
+        current_i -= 1
+
+    return wps
+
 
 
 class WaypointUpdater(object):
@@ -144,13 +184,27 @@ class WaypointUpdater(object):
         # Determine the index in `self.waypoints` of the first waypoint in front of the car
         pose_i = get_next_waypoint_idx(msg.pose, self.waypoints, self.prev_wp_idx)
         # Store the found value; search will start from it at the next iteration, for efficiency
-        self.prev_wp_idx = max(pose_i, self.prev_wp_idx)   # Cannot go backward!
+        if pose_i < self.prev_wp_idx:
+            rospy.logdebug("Going backward? Got pose_i < self.prev_wp_idx: pose_i={} self.prev_ws_idx={}".format(pose_i, self.prev_wp_idx))
+        self.prev_wp_idx = pose_i
 
-        # Collect LOOKAHEAD_WPS waypoints starting from that index
+        ''' 
+        Collect LOOKAHEAD_WPS waypoints starting from that index
+        '''
+
         # TODO as optimization, this part could be skipped if stopping by a red light, as lane.waypoints will be set to [] below
         lane = Lane()
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time(0)
+
+        ''' If the first waypoint in the list is too close to the current car position, then the /pure_pursuit
+        might send out a twist command with negative or null linear speed to try to reach it, messing up the DBW;
+        therefore, if the first waypoint is too close, skip to the next one. Without this fix, the car might
+        remain still after a traffic light turned green. '''
+        dist_from_first_wp = poses_distance(msg.pose, self.waypoints[pose_i].pose.pose)
+        if dist_from_first_wp < .6:
+            pose_i = (pose_i + 1) % len(self.waypoints)
+
         for count in xrange(LOOKAHEAD_WPS):
             i = (pose_i+count) % len(self.waypoints)
             wp = self.waypoints[i]
@@ -170,20 +224,7 @@ class WaypointUpdater(object):
             # If the waypoint where to stop is within LOOKAHEAD_WPS from the current closest waypoint...
             elif pose_i+LOOKAHEAD_WPS > tl_wp_i:
                 # ... then plan to stop
-                lane.waypoints = plan_stop(lane.waypoints, tl_wp_i-pose_i, -2, self.enforced_speed_limit)  # TODO set the deceleration properly
-
-        '''
-        else:  # If there is no red traffic light in front of the car, make sure lane.waypoints 
-            prev_velocity = lane.waypoints[-1].twist.twist.linear.x if len(lane.waypoints) > 0 else .0
-            while len(lane.waypoints) < LOOKAHEAD_WPS:
-                i = (pose_i + len(lane.waypoints) + 1) % len(self.waypoints)
-                wp = self.waypoints[i]
-                dist = distance(self.waypoints, i, (i-1) % len(self.waypoints))
-                wp.twist.twist.linear.x = (prev_velocity**2 + 2*self.accel_limit*dist)**.5
-                wp.twist.twist.linear.x = min(wp.twist.twist.linear.x, self.enforced_speed_limit, self.waypoints[i].twist.twist.linear.x)
-                lane.waypoints.append(wp)
-            
-        '''
+                lane.waypoints = plan_stop(lane.waypoints, tl_wp_i-pose_i, self.decel_limit/3., self.decel_limit, self.enforced_speed_limit)  # TODO set the deceleration properly
 
         self.final_waypoints_pub.publish(lane)
         total_time = time.time() - now

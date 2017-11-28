@@ -358,15 +358,17 @@ if __name__ == '__main__':
 TODO
 ====
 
-+ anticipate all TLs by a few meters
++ handle stop at the end of the track
+! anticipate all TLs by a few meters
 + correctly set deceleration
 + test with video recording, ensure acceleration is robust
 + test with lower speed limits
 + check/lower frequency of TL detection
 + test without GPU
-+ should it stop with a yellow light?
+! should it stop with a yellow light? Yes!
 + check all TODOs
 + fix the way for TL detection to warm-up
++ charting should show an empty track when at red lights
 
 ** tunare i filtri su throttle/brake/steering
 - servono veramente le deep copy?

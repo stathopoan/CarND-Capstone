@@ -73,8 +73,8 @@ class TLDetector(object):
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
-        self.stop_line_idxs = [np.argmin([euler_distance((wp.pose.pose.position.x, wp.pose.pose.position.y), stop_line_pos) for wp in self.waypoints]) for stop_line_pos in self.stop_line_positions]
-        # self.stop_line_idxs = [ (idx - 3) % len(self.waypoints) for idx in exact_stop_line_idxs]  # Take a margin of 3
+        exact_stop_line_idxs = [np.argmin([euler_distance((wp.pose.pose.position.x, wp.pose.pose.position.y), stop_line_pos) for wp in self.waypoints]) for stop_line_pos in self.stop_line_positions]
+        self.stop_line_idxs = [ (idx - 1) % len(self.waypoints) for idx in exact_stop_line_idxs]  # Take a margin of 1
         rospy.Subscriber('/image_color', Image, self.image_cb)
 
     def traffic_cb(self, msg):
@@ -104,7 +104,7 @@ class TLDetector(object):
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            light_wp_i = light_wp_i if state == TrafficLight.RED else -1
+            light_wp_i = light_wp_i if state == TrafficLight.RED or state == TrafficLight.YELLOW else -1
             self.last_wp = light_wp_i
             self.upcoming_red_light_pub.publish(Int32(light_wp_i))
         else:
