@@ -87,7 +87,7 @@ class DBWNode(object):
 
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
-        brake_deadband = rospy.get_param('~brake_deadband', .1)  # TODO Support!
+        brake_deadband = rospy.get_param('~brake_deadband', .1)
         decel_limit = rospy.get_param('~decel_limit', -5)
         accel_limit = rospy.get_param('~accel_limit', 1.)
         wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
@@ -102,7 +102,7 @@ class DBWNode(object):
         self.current_yaw_velocity = .0
         self.current_velocity_lock = threading.Lock()
 
-        self.dbw_enabled = False  # TODO good for the simulator, but what is the right value for Carla?
+        self.dbw_enabled = False
         self.dbw_enabled_lock = threading.Lock()
 
         self.last_twist_cb_time = None  # Only read/write this inside twist_cb(), it is not protected by locks!
@@ -207,8 +207,8 @@ class DBWNode(object):
                         brake_cmd = .0
                     elif throttle < 0:
                         throttle_cmd = 0
-                        brake_cmd = - 3 * self.max_decel_torque * throttle  # TODO keep tuning this!
-                        if brake_cmd > self.max_decel_torque:  # TODO make it fancier with min() and max()
+                        brake_cmd = - 3 * self.max_decel_torque * throttle
+                        if brake_cmd > self.max_decel_torque:
                             brake_cmd = self.max_decel_torque
                         if brake_cmd < self.torque_deadband:
                             brake_cmd = 0
@@ -220,9 +220,12 @@ class DBWNode(object):
                         throttle_cmd = .0
                         brake_cmd = self.max_decel_torque / 3.
 
-                    assert 0 <= throttle_cmd <= 1  # TODO remove asserts before submission
-                    assert 0 <= brake_cmd <= self.max_decel_torque
-                    assert -self.max_steer_angle <= steering <= self.max_steer_angle
+                    if throttle_cmd < 0 or throttle_cmd > 1:
+                        rospy.logdebug("Throttle command out of range={}".format(throttle_cmd))
+                    if brake_cmd < 0 or brake_cmd > self.max_decel_torque:
+                        rospy.logdebug("Brake command out of range={}".format(brake_cmd))
+                    if abs(steering) > self.max_steer_angle:
+                        rospy.logdebug("Steering command out of range={}".format(steering))
 
                     self.publish(throttle=throttle_cmd, brake=brake_cmd, steer=steering)
 
@@ -358,17 +361,17 @@ if __name__ == '__main__':
 TODO
 ====
 
-+ handle stop at the end of the track
-! anticipate all TLs by a few meters
-! correctly set deceleration
 + test with video recording, ensure acceleration is robust
 + test with lower speed limits
-+ check/lower frequency of TL detection
 + test without GPU
-! should it stop with a yellow light? Yes!
 + check all TODOs
 + fix the way for TL detection to warm-up
-+ charting should show an empty track when at red lights
+! charting should show an empty track when at red lights
+! handle stop at the end of the track
+! anticipate all TLs by a few meters
+! correctly set deceleration
+! check/lower frequency of TL detection
+! should it stop with a yellow light? Yes!
 
 ** tunare i filtri su throttle/brake/steering
 - servono veramente le deep copy?

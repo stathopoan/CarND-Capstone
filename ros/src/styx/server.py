@@ -57,7 +57,12 @@ def trafficlights(sid, data):
 
 @sio.on('image')
 def image(sid, data):
-    bridge.publish_camera(data)
+    # Limit the frequency of images notification to lighten the load
+    now = time.time()
+    if now - image.last_image_time >= .2:  # No less than this time interval between two images, in seconds
+        image.last_image_time = now
+        bridge.publish_camera(data)
+image.last_image_time = time.time()
 
 if __name__ == '__main__':
 

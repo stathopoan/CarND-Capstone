@@ -1,20 +1,18 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import Int32
-from geometry_msgs.msg import PoseStamped, Pose
-from styx_msgs.msg import TrafficLightArray, TrafficLight
+from geometry_msgs.msg import PoseStamped
+from styx_msgs.msg import TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
-import cv2
 import yaml
 import numpy as np
-import tensorflow
 import sys
 import os
-import math
+import time
 
 this_file_dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(this_file_dir_path+'/../tools')
@@ -30,7 +28,7 @@ class TLDetector(object):
         self.pose = None
         self.waypoints = None
         self.camera_image = None
-        self.lights = []
+        # self.lights = []
         self.prev_wp_idx = 0
 
         config_string = rospy.get_param("/traffic_light_config")
@@ -47,6 +45,9 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
+        self.first_image_time = None
+        self.image_count = -1
+
         # [x,y] coordinates of stopping lines before traffic lights
         self.stop_line_positions = self.config['stop_line_positions']
         # Indices in self.waypoints of the waypoints closest to the respective stopping lines, as reported in self.stop_line_positions
@@ -62,7 +63,7 @@ class TLDetector(object):
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
         rely on the position of the light and the camera image to predict it.
         '''
-        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)  # TODO do we actually need this?
+        # rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         ''' Subscription to /image_color is inside self.waypoints_cb(), as we need the list of track waypoints before
         being able to process messages from /image_color'''
 
@@ -77,8 +78,10 @@ class TLDetector(object):
         self.stop_line_idxs = [ (idx - 1) % len(self.waypoints) for idx in exact_stop_line_idxs]  # Take a margin of 1
         rospy.Subscriber('/image_color', Image, self.image_cb)
 
+    '''
     def traffic_cb(self, msg):
         self.lights = msg.lights
+    '''
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -88,6 +91,13 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
+        self.image_count += 1
+        if self.first_image_time is None:
+            self.first_image_time = time.time()
+
+        if self.image_count >= 1:
+            rospy.logdebug("Images per second: {}".format(self.image_count/(time.time()-self.first_image_time)))
+
         self.has_image = True
         self.camera_image = msg
         light_wp_i, state = self.process_traffic_lights()
@@ -127,7 +137,7 @@ class TLDetector(object):
         return self.prev_wp_idx
     '''
 
-    def get_light_state(self, light):
+    def get_light_state(self):
         """Determines the current color of the traffic light
 
         Args:
@@ -170,12 +180,13 @@ class TLDetector(object):
                 dist = ((pos[0]-car_x)**2 + (pos[1]-car_y)**2) ** .5
                 if dist < min_distance:
                     tl_car_ref_x, _ = universal2car_ref(pos[0], pos[1], car_x, car_y, car_yaw)
-                    if tl_car_ref_x >= -2:  # TODO tune this margin (0 = no margin)
+                    # Check for a light with stop line before or slightly after the car
+                    if tl_car_ref_x >= -1.4:
                         min_distance = dist
                         min_distance_i = pos_i
             rospy.logdebug('min_distance_i={} min_distance={}\n'.format(min_distance_i, min_distance))
-            if min_distance_i >= 0 and min_distance < 100:  # TODO tune this min distance
-                state = self.get_light_state(stop_line_positions[pos_i])  # TODO is this the right argument to pass?
+            if min_distance_i >= 0 and min_distance < 80:
+                state = self.get_light_state()
                 return self.stop_line_idxs[min_distance_i], state
             else:
                 return -1, TrafficLight.UNKNOWN

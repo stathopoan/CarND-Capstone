@@ -5,7 +5,7 @@ import os
 import rospy
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane, Waypoint
-from std_msgs.msg import Int32
+from std_msgs.msg import Int32, Bool
 import tf
 import math
 import threading
@@ -175,7 +175,7 @@ class WaypointUpdater(object):
             return
         self.previous_pose_cb_time = now
         self.total_time += delta_t
-        self.received_pose_count += 1 # TODO protect with mutex!
+        self.received_pose_count += 1
 
         rospy.logdebug('Processing pose #{}; delta_t from previous processing is {}s with average {}s'.format(self.received_pose_count,
                                                                                                               delta_t,
@@ -188,16 +188,20 @@ class WaypointUpdater(object):
             rospy.logdebug("Going backward? Got pose_i < self.prev_wp_idx: pose_i={} self.prev_ws_idx={}".format(pose_i, self.prev_wp_idx))
         self.prev_wp_idx = pose_i
 
-        ''' 
-        Collect LOOKAHEAD_WPS waypoints starting from that index
-        '''
+        # Get the traffic light status (it is -1 if no yellow/red traffic light ahead)
+        tl_wp_i = self.get_tl()
+        rospy.logdebug("Getting tl_wp_i={}".format(tl_wp_i))
 
-        # TODO as optimization, this part could be skipped if stopping by a red light, as lane.waypoints will be set to [] below
         lane = Lane()
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time(0)
 
-        if pose_i >= 0:
+        ''' 
+        Collect LOOKAHEAD_WPS waypoints starting from the given index, if there is at least one waypoint ahead
+        of the car, and the car is not at, or past, a red/yellow traffic light
+        '''
+
+        if pose_i >= 0 and (tl_wp_i < 0 or pose_i < tl_wp_i):
             ''' If the first waypoint in the list is too close to the current car position, then the /pure_pursuit
             might send out a twist command with negative or null linear speed to try to reach it, messing up the DBW;
             therefore, if the first waypoint is too close, skip to the next one. Without this fix, the car might
@@ -215,19 +219,15 @@ class WaypointUpdater(object):
                 wp.twist.twist.linear.x = min(wp.twist.twist.linear.x, self.enforced_speed_limit)
                 lane.waypoints.append(wp)
 
-            # Handle traffic lights
-            tl_wp_i = self.get_tl()
-            rospy.logdebug("Getting tl_wp_i={}".format(tl_wp_i))
-            if tl_wp_i >=0:  # If there is a red traffic light in front of the car...
-                # ... target to stop a couple waypoints before it, as a margin of safety
-                # tl_wp_i = (tl_wp_i - 1) % len(self.waypoints)
-                # If already at (or past) the stop waypoint, make sure the car stops and doesn't move
-                if pose_i >= tl_wp_i:
-                    lane.waypoints = []
-                # If the waypoint where to stop is within LOOKAHEAD_WPS from the current closest waypoint...
-                elif pose_i+LOOKAHEAD_WPS > tl_wp_i:
-                    # ... then plan to stop
-                    lane.waypoints = plan_stop(lane.waypoints, tl_wp_i-pose_i, self.decel_limit/3., self.decel_limit, self.enforced_speed_limit)
+        # Handle traffic lights
+        if tl_wp_i >=0:  # If there is a red traffic light in front of the car...
+            # If already at (or past) the stop waypoint, make sure the car stops and doesn't move
+            if pose_i >= tl_wp_i:
+                lane.waypoints = []
+            # If the waypoint where to stop is within LOOKAHEAD_WPS from the current closest waypoint...
+            elif pose_i+LOOKAHEAD_WPS > tl_wp_i:
+                # ... then plan to stop
+                lane.waypoints = plan_stop(lane.waypoints, tl_wp_i-pose_i, self.decel_limit/3., self.decel_limit, self.enforced_speed_limit)
 
         self.final_waypoints_pub.publish(lane)
         total_time = time.time() - now
@@ -250,19 +250,25 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.DBW_enabled_cb)
 
     def traffic_cb(self, msg):
         # DONE: Callback for /traffic_waypoint message. Implement
         self.set_tl(msg.data)
 
     def obstacle_cb(self, msg):
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later
+        # Callback for /obstacle_waypoint message. Not implemented.
         pass
 
-    def current_velocity_cb(self, msg):  # TODO remove code duplication with DBW node
+    def current_velocity_cb(self, msg):
         linear = msg.twist.linear.x
         angular = msg.twist.angular.z
         self.set_current_velocity(linear=linear, angular=angular)
+
+    def DBW_enabled_cb(self, msg):
+        rospy.logdebug('Received enable DBW')
+        rospy.logdebug(msg)
+        self.prev_wp_idx = 0
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x

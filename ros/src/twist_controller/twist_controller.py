@@ -5,10 +5,9 @@ ONE_MPH = 0.44704
 
 class Controller(object):
     def __init__(self, *args, **kwargs):
-        # TODO: Implement
+        # Not implemented here
         pass
 
     def control(self, *args, **kwargs):
-        # TODO: Change the arg, kwarg list to suit your needs
-        # Return throttle, brake, steer
+        # Not implemented here
         return 1., 0., 0.

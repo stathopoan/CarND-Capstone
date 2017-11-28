@@ -1,5 +1,6 @@
 import math
 import tf
+import sys
 
 def unpack_pose(the_pose):
     """
@@ -93,16 +94,35 @@ def get_next_waypoint_idx(pose, waypoints, starting_idx):
     :param starting_idx: starting position in parameter `waypoints` from which the index is searched.
     :return: the found index, or -1 if all waypoints are behind the car already.
     """
+
+    if starting_idx < 0:
+        return -1
     # Get the car yaw, x and y coordinates (in the universal reference system)
     quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
     _, _, pose_yaw = tf.transformations.euler_from_quaternion(quaternion)
     pose_x, pose_y, _ = unpack_pose(pose)
+
+    if starting_idx == 0:
+        wp_i = -1
+        closest_dist = sys.float_info.max
+        for i, wp in enumerate(waypoints):
+            wp_x, wp_y, _ = unpack_pose(wp.pose.pose)
+            # Convert them to the car reference system
+            wp_x_car_ref, _ = universal2car_ref(x=wp_x, y=wp_y, car_x=pose_x, car_y=pose_y, car_yaw=pose_yaw)
+            dist = poses_distance(pose, wp.pose.pose)
+            if wp_x_car_ref > 0 and dist < closest_dist:
+                wp_i = i
+                closest_dist = dist
+        return wp_i
 
     ''' Starting from the waypoint with index `starting_idx` in `waypoints`, find the first one with a positive
     x coordinate in the car reference system. That is the first waypoint in front of the car. '''
     wp_i = starting_idx
     direction = 1  # Currently always set to 1. Setting it to -1 would allow to search backward in the waypoints list.
     while True:
+        # If you are already at the last waypoint in the list, return -1
+        if wp_i >= len(waypoints)-1:
+            return -1
         # Fetch the waypoint coordinates, in the universal reference system.
         wp_x, wp_y, _ = unpack_pose(waypoints[wp_i].pose.pose)
         # Convert them to the car reference system
@@ -112,9 +132,6 @@ def get_next_waypoint_idx(pose, waypoints, starting_idx):
             break
         # Otherwise check the next waypoint in the list
         wp_i = wp_i + direction
-        # If you were already at the last waypoint in the list, return -1
-        if wp_i >= len(waypoints):
-            return -1
 
     return wp_i
 
