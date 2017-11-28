@@ -117,7 +117,7 @@ class WaypointUpdater(object):
         self.speed_limit = rospy.get_param('/waypoint_loader/velocity') * 1000 / 3600.  # m/s
 
         # The speed limit that will be enforced, lower than the configured speed limit, in order to have a safety margin
-        self.enforced_speed_limit = self.speed_limit * .9
+        self.enforced_speed_limit = self.speed_limit * .85
 
         # The waypoints describing the track and the wanted cruise speed (traffic lights aside)
         self.waypoints = None

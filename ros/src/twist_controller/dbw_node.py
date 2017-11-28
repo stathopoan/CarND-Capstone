@@ -5,6 +5,7 @@ import threading
 import time
 import copy
 import rospy
+import warnings
 import numpy as np
 import os
 import sys
@@ -21,6 +22,9 @@ from lowpass import SimpleLowPassFilter
 this_file_dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(this_file_dir_path+'/../tools')
 from utils import unpack_pose
+
+warnings.simplefilter('ignore', np.RankWarning)  # Suppress Numpy RankWarning for Polyfit
+
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -368,21 +372,15 @@ if __name__ == '__main__':
 TODO
 ====
 
-+ test with video recording, ensure acceleration is robust
-+ test with lower speed limits
 + test without GPU
-+ check all TODOs
 + fix the way for TL detection to warm-up
+! test with lower speed limits
+! check all TODOs
 ! charting should show an empty track when at red lights
 ! handle stop at the end of the track
 ! anticipate all TLs by a few meters
 ! correctly set deceleration
 ! check/lower frequency of TL detection
 ! should it stop with a yellow light? Yes!
-
-** tunare i filtri su throttle/brake/steering
-- servono veramente le deep copy?
-- controlla il time-stamp degli eventi in arrivo a twist_cb()
-- considera di prendere il max torque da BrakCmd.TORQUE_MAX
 
 """
