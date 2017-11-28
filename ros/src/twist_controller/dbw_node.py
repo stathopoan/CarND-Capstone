@@ -360,7 +360,7 @@ TODO
 
 + handle stop at the end of the track
 ! anticipate all TLs by a few meters
-+ correctly set deceleration
+! correctly set deceleration
 + test with video recording, ensure acceleration is robust
 + test with lower speed limits
 + check/lower frequency of TL detection
@@ -373,9 +373,6 @@ TODO
 ** tunare i filtri su throttle/brake/steering
 - servono veramente le deep copy?
 - controlla il time-stamp degli eventi in arrivo a twist_cb()
-* calcolare la velocita' di crocera in base alla velocita' massima, attenzione anche alla velocita' dei waypoint;
-testare a velocita' molto basse!
-* l'auto potrebbe andare all'indietro? Ovvero avere una velocita' negativa. Considerare di gestirlo.
 - considera di prendere il max torque da BrakCmd.TORQUE_MAX
 
 """

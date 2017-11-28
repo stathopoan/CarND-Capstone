@@ -91,7 +91,7 @@ def get_next_waypoint_idx(pose, waypoints, starting_idx):
     :param pose: the car pose, inclusive of orientation.
     :param waypoints: the list of waypoints.
     :param starting_idx: starting position in parameter `waypoints` from which the index is searched.
-    :return: the found index.
+    :return: the found index, or -1 if all waypoints are behind the car already.
     """
     # Get the car yaw, x and y coordinates (in the universal reference system)
     quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
@@ -110,9 +110,11 @@ def get_next_waypoint_idx(pose, waypoints, starting_idx):
         # If the x coordinate is positive, then the waypoint is in front of the car, what we are looking for.
         if wp_x_car_ref >= 0:
             break
-        # Otherwise check the next waypoint in the list; take care to wrap around when reaching the end of the list.
-        wp_i = (wp_i + direction) % len(waypoints)
-        assert wp_i != starting_idx  # If it gets in an infinite loop, then it is a bug!
+        # Otherwise check the next waypoint in the list
+        wp_i = wp_i + direction
+        # If you were already at the last waypoint in the list, return -1
+        if wp_i >= len(waypoints):
+            return -1
 
     return wp_i
 

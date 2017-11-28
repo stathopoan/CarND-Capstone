@@ -18,7 +18,7 @@ import math
 
 this_file_dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(this_file_dir_path+'/../tools')
-from utils import get_next_waypoint_idx, unpack_pose, universal2car_ref, euler_distance
+from utils import unpack_pose, universal2car_ref, euler_distance
 
 
 STATE_COUNT_THRESHOLD = 2
@@ -111,6 +111,7 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
+    '''
     def get_closest_waypoint(self, pose_stamped):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
@@ -124,6 +125,7 @@ class TLDetector(object):
 
         self.prev_wp_idx = get_next_waypoint_idx(pose_stamped.pose, self.waypoints, self.prev_wp_idx)
         return self.prev_wp_idx
+    '''
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light

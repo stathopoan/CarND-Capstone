@@ -197,34 +197,37 @@ class WaypointUpdater(object):
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time(0)
 
-        ''' If the first waypoint in the list is too close to the current car position, then the /pure_pursuit
-        might send out a twist command with negative or null linear speed to try to reach it, messing up the DBW;
-        therefore, if the first waypoint is too close, skip to the next one. Without this fix, the car might
-        remain still after a traffic light turned green. '''
-        dist_from_first_wp = poses_distance(msg.pose, self.waypoints[pose_i].pose.pose)
-        if dist_from_first_wp < .6:
-            pose_i = (pose_i + 1) % len(self.waypoints)
+        if pose_i >= 0:
+            ''' If the first waypoint in the list is too close to the current car position, then the /pure_pursuit
+            might send out a twist command with negative or null linear speed to try to reach it, messing up the DBW;
+            therefore, if the first waypoint is too close, skip to the next one. Without this fix, the car might
+            remain still after a traffic light turned green. '''
+            dist_from_first_wp = poses_distance(msg.pose, self.waypoints[pose_i].pose.pose)
+            if dist_from_first_wp < .6:
+                pose_i = (pose_i + 1) % len(self.waypoints)
 
-        for count in xrange(LOOKAHEAD_WPS):
-            i = (pose_i+count) % len(self.waypoints)
-            wp = self.waypoints[i]
-            # Cap the linear velocity at self.enforced_speed_limit
-            wp.twist.twist.linear.x = min(wp.twist.twist.linear.x, self.enforced_speed_limit)
-            lane.waypoints.append(wp)
+            for count in xrange(LOOKAHEAD_WPS):
+                i = pose_i+count
+                if i >= len(self.waypoints):  # Car must stop at the end of the waypoints track
+                    break
+                wp = self.waypoints[i]
+                # Cap the linear velocity at self.enforced_speed_limit
+                wp.twist.twist.linear.x = min(wp.twist.twist.linear.x, self.enforced_speed_limit)
+                lane.waypoints.append(wp)
 
-        # Handle traffic lights
-        tl_wp_i = self.get_tl()
-        rospy.logdebug("Getting tl_wp_i={}".format(tl_wp_i))
-        if tl_wp_i >=0:  # If there is a red traffic light in front of the car...
-            # ... target to stop a couple waypoints before it, as a margin of safety
-            # tl_wp_i = (tl_wp_i - 1) % len(self.waypoints)
-            # If already at (or past) the stop waypoint, make sure the car stops and doesn't move
-            if pose_i >= tl_wp_i:
-                lane.waypoints = []
-            # If the waypoint where to stop is within LOOKAHEAD_WPS from the current closest waypoint...
-            elif pose_i+LOOKAHEAD_WPS > tl_wp_i:
-                # ... then plan to stop
-                lane.waypoints = plan_stop(lane.waypoints, tl_wp_i-pose_i, self.decel_limit/3., self.decel_limit, self.enforced_speed_limit)  # TODO set the deceleration properly
+            # Handle traffic lights
+            tl_wp_i = self.get_tl()
+            rospy.logdebug("Getting tl_wp_i={}".format(tl_wp_i))
+            if tl_wp_i >=0:  # If there is a red traffic light in front of the car...
+                # ... target to stop a couple waypoints before it, as a margin of safety
+                # tl_wp_i = (tl_wp_i - 1) % len(self.waypoints)
+                # If already at (or past) the stop waypoint, make sure the car stops and doesn't move
+                if pose_i >= tl_wp_i:
+                    lane.waypoints = []
+                # If the waypoint where to stop is within LOOKAHEAD_WPS from the current closest waypoint...
+                elif pose_i+LOOKAHEAD_WPS > tl_wp_i:
+                    # ... then plan to stop
+                    lane.waypoints = plan_stop(lane.waypoints, tl_wp_i-pose_i, self.decel_limit/3., self.decel_limit, self.enforced_speed_limit)
 
         self.final_waypoints_pub.publish(lane)
         total_time = time.time() - now
