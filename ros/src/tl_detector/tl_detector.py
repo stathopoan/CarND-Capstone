@@ -21,6 +21,7 @@ from utils import unpack_pose, universal2car_ref, euler_distance
 
 STATE_COUNT_THRESHOLD = 2
 
+
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector', log_level=rospy.INFO)
@@ -75,7 +76,7 @@ class TLDetector(object):
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
         exact_stop_line_idxs = [np.argmin([euler_distance((wp.pose.pose.position.x, wp.pose.pose.position.y), stop_line_pos) for wp in self.waypoints]) for stop_line_pos in self.stop_line_positions]
-        self.stop_line_idxs = [ (idx - 1) % len(self.waypoints) for idx in exact_stop_line_idxs]  # Take a margin of 1
+        self.stop_line_idxs = [(idx - 1) % len(self.waypoints) for idx in exact_stop_line_idxs]  # Take a margin of 1
         rospy.Subscriber('/image_color', Image, self.image_cb)
 
     '''
@@ -141,13 +142,12 @@ class TLDetector(object):
         """Determines the current color of the traffic light
 
         Args:
-            light (TrafficLight): light to classify
 
         Returns:
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        if(not self.has_image):
+        if not self.has_image:
             self.prev_light_loc = None
             return False
 
@@ -171,7 +171,7 @@ class TLDetector(object):
         if self.pose is not None:
             car_pose = self.pose.pose
             car_x, car_y, _ = unpack_pose(car_pose)
-            #Find the closest visible traffic light (if one exists)
+            # Find the closest visible traffic light (if one exists)
             min_distance = sys.float_info.max
             min_distance_i = -1
             quaternion = (car_pose.orientation.x, car_pose.orientation.y, car_pose.orientation.z, car_pose.orientation.w)
@@ -192,6 +192,7 @@ class TLDetector(object):
                 return -1, TrafficLight.UNKNOWN
         else:
             return -1, TrafficLight.UNKNOWN
+
 
 if __name__ == '__main__':
     try:

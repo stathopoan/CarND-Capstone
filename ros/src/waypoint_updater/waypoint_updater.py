@@ -11,7 +11,7 @@ import time
 
 this_file_dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(this_file_dir_path+'/../tools')
-from utils import distance, get_next_waypoint_idx, poses_distance
+from utils import distance, get_next_waypoint_idx
 
 
 '''
@@ -30,43 +30,13 @@ as well as to verify your TL classifier.
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
 
 
-def plan_stop2(wps, idx, decel, speed_limit):
-    """
-    Alter the speed of given waypoints to ensure the car comes to a full stop around the waypoints of index idx
-    :param wps: the given waypoints
-    :param idx: the index of the waypoint within wps where the car must stop
-    :param speed: the initial speed of the car, in m/s
-    :param decel: the wanted deceleration, a negative numer in m/s/s
-    :param speed_limit: the speed limit not be exceeded, in m/s
-    """
-
-    if idx < 0:
-        return []
-
-    wps = wps[0: idx+1]
-
-    wps[idx].twist.twist.linear.x = 0
-    current_speed = 0
-    current_i = idx-1
-    while current_i >= 0 and (current_i == 0 or current_speed < wps[current_i-1].twist.twist.linear.x):
-        dist = distance(wps, current_i, current_i+1)
-        current_speed = (current_speed**2 - 2*decel*dist)**.5
-        if current_i >= 1:
-            current_speed = min(current_speed, wps[current_i-1].twist.twist.linear.x)
-        else:
-            current_speed = min(current_speed, speed_limit)
-        wps[current_i].twist.twist.linear.x = current_speed
-        current_i -= 1
-
-    return wps
-
 def plan_stop(wps, idx, min_decel, max_decel, speed_limit):
     """
-    Alter the speed of given waypoints to ensure the car comes to a full stop around the waypoints of index idx
+    Alter the speed of given waypoints to direct the car to come to a full stop at the waypoint of index idx
     :param wps: the given waypoints
     :param idx: the index of the waypoint within wps where the car must stop
-    :param speed: the initial speed of the car, in m/s
-    :param decel: the wanted deceleration, a negative numer in m/s/s
+    :param min_decel: the smallest (in absolute value) allowed deceleration, a negative numer in m/s/s
+    :param max_decel: the greatest (in absolute value) allowed deceleration, a negative numer in m/s/s
     :param speed_limit: the speed limit not be exceeded, in m/s
     """
 
@@ -102,7 +72,7 @@ def plan_stop(wps, idx, min_decel, max_decel, speed_limit):
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
+        rospy.init_node('waypoint_updater', log_level=rospy.INFO)
 
         ''' Note that subscription to /current_pose is done inside self.waypoints_cb(). No point in receiving pose
         updates before having received the track waypoints. '''
@@ -143,6 +113,8 @@ class WaypointUpdater(object):
         self.tl = -1
         self.tl_lock = threading.Lock()
 
+        self.end_of_track_notified = False
+
         rospy.spin()
 
     def set_tl(self, value):
@@ -176,6 +148,11 @@ class WaypointUpdater(object):
 
         # Determine the index in `self.waypoints` of the first waypoint in front of the car
         pose_i = get_next_waypoint_idx(msg.pose, self.waypoints, self.prev_wp_idx)
+
+        if pose_i >= len(self.waypoints) and not self.end_of_track_notified:
+            rospy.loginfo('Reached the end of the waypoints track.')
+            self.end_of_track_notified = True
+
         # Store the found value; search will start from it at the next iteration, for efficiency
         if pose_i < self.prev_wp_idx:
             rospy.logdebug("Going backward? Got pose_i < self.prev_wp_idx: pose_i={} self.prev_ws_idx={}".format(pose_i, self.prev_wp_idx))
@@ -195,14 +172,6 @@ class WaypointUpdater(object):
         '''
 
         if pose_i >= 0 and (tl_wp_i < 0 or pose_i < tl_wp_i):
-            ''' If the first waypoint in the list is too close to the current car position, then the /pure_pursuit
-            might send out a twist command with negative or null linear speed to try to reach it, messing up the DBW;
-            therefore, if the first waypoint is too close, skip to the next one. Without this fix, the car might
-            remain still after a traffic light turned green. '''
-            # dist_from_first_wp = poses_distance(msg.pose, self.waypoints[pose_i].pose.pose)
-            # if dist_from_first_wp < .6:
-            # pose_i = pose_i + 1
-
             for count in xrange(LOOKAHEAD_WPS):
                 i = pose_i+count
                 if i >= len(self.waypoints):  # Car must stop at the end of the waypoints track
@@ -213,14 +182,18 @@ class WaypointUpdater(object):
                 lane.waypoints.append(wp)
 
         # Handle traffic lights
-        if tl_wp_i >=0:  # If there is a red traffic light in front of the car...
+        if tl_wp_i >= 0:  # If there is a red traffic light in front of the car...
             # If already at (or past) the stop waypoint, make sure the car stops and doesn't move
             if pose_i >= tl_wp_i:
                 lane.waypoints = []
             # If the waypoint where to stop is within LOOKAHEAD_WPS from the current closest waypoint...
             elif pose_i+LOOKAHEAD_WPS > tl_wp_i:
                 # ... then plan to stop
-                lane.waypoints = plan_stop(lane.waypoints, tl_wp_i-pose_i, self.decel_limit/3., self.decel_limit, self.enforced_speed_limit)
+                lane.waypoints = plan_stop(lane.waypoints,
+                                           tl_wp_i-pose_i,
+                                           self.decel_limit/3.,
+                                           self.decel_limit,
+                                           self.enforced_speed_limit)
 
         self.final_waypoints_pub.publish(lane)
         total_time = time.time() - now
@@ -237,7 +210,7 @@ class WaypointUpdater(object):
         for wp in waypoints.waypoints:
             wp.twist.twist.linear.x = 9.
 
-        self.waypoints = waypoints.waypoints # No need to guarantee mutual exclusion in accessing this data member
+        self.waypoints = waypoints.waypoints  # No need to guarantee mutual exclusion in accessing this data member
 
         # Now that the waypoints describing the track have been received, it is time to subscribe to pose updates.
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -262,6 +235,7 @@ class WaypointUpdater(object):
         rospy.logdebug('Received enable DBW')
         rospy.logdebug(msg)
         self.prev_wp_idx = 0
+        self.end_of_track_notified = False
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x

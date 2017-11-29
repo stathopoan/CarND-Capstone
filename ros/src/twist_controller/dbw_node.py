@@ -10,7 +10,7 @@ import numpy as np
 import os
 import sys
 
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Int32
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd
 from yaw_controller import YawController
 from pid import PID
@@ -24,30 +24,6 @@ sys.path.append(this_file_dir_path+'/../tools')
 from utils import unpack_pose
 
 warnings.simplefilter('ignore', np.RankWarning)  # Suppress Numpy RankWarning for Polyfit
-
-
-'''
-You can build this node only after you have built (or partially built) the `waypoint_updater` node.
-
-You will subscribe to `/twist_cmd` message which provides the proposed linear and angular velocities.
-You can subscribe to any other message that you find important or refer to the document for list
-of messages subscribed to by the reference implementation of this node.
-
-One thing to keep in mind while building this node and the `twist_controller` class is the status
-of `dbw_enabled`. While in the simulator, its enabled all the time, in the real car, that will
-not be the case. This may cause your PID controller to accumulate error because the car could
-temporarily be driven by a human instead of your controller.
-
-We have provided two launch files with this node. Vehicle specific values (like vehicle_mass,
-wheel_base) etc should not be altered in these files.
-
-We have also provided some reference implementations for PID controller and other utility classes.
-You are free to use them or build your own.
-
-Once you have the proposed throttle, brake, and steer values, publish it on the various publishers
-that we have created in the `__init__` function.
-
-'''
 
 
 def rad2deg(rad):
@@ -84,9 +60,7 @@ def get_progressive_file_name(root, ext):
 
 class DBWNode(object):
     def __init__(self):
-        cwd = os.getcwd()
-
-        rospy.init_node('dbw_node', log_level=rospy.DEBUG)
+        rospy.init_node('dbw_node', log_level=rospy.INFO)
 
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
@@ -139,6 +113,8 @@ class DBWNode(object):
         self.total_time = .0
         self.count = .0
 
+        self.tl_detection_is_ready = False
+
         throttle_PID = .4, .015, 0.0  # Best so far
 
         path_to_dir = os.path.expanduser('~/.ros/chart_data')  # Replace ~ with path to user home directory
@@ -166,6 +142,7 @@ class DBWNode(object):
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.DBW_enabled_cb)
         rospy.Subscriber('/final_waypoints', Lane, self.final_waypoints_cb, queue_size=1)
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        self.traffic_sub = rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         self.spin()
 
@@ -192,7 +169,7 @@ class DBWNode(object):
                 case.
                 '''
                 twist = self.get_twist()
-                if self.get_dbw_enabled() and twist is not None:
+                if self.get_dbw_enabled() and twist is not None and self.tl_detection_ready():
                     if twist.linear.x < 0:
                         rospy.logdebug("Negative velocity in twist command: twist.linear.x={}".format(twist.linear.x))
                     if np.isclose(twist.linear.x, .0) and not np.isclose(twist.angular.z, .0):
@@ -301,15 +278,30 @@ class DBWNode(object):
         self.dbw_enabled_lock.acquire()
         prev_value = self.dbw_enabled
         self.dbw_enabled = enable
-        if prev_value == False and enable == True:
+        if prev_value is False and enable is True:
             self.throttle_controller.reset()
         self.dbw_enabled_lock.release()
+        if enable:
+            info = 'Drive-by-Wire enabled.'
+            if not self.tl_detection_ready():
+                info += ' Stand by for Traffic Light Detection to start.'
+            rospy.loginfo(info)
+        else:
+            rospy.loginfo('Drive-by-Wire disabled.')
 
     def get_dbw_enabled(self):
         self.dbw_enabled_lock.acquire()
         enabled = self.dbw_enabled
         self.dbw_enabled_lock.release()
         return enabled
+
+    def traffic_cb(self, _):
+        self.traffic_sub.unregister()
+        self.tl_detection_is_ready = True
+        rospy.loginfo('Traffic Light Detection started, ready to drive.')
+
+    def tl_detection_ready(self):
+        return self.tl_detection_is_ready
 
     def publish(self, throttle, brake, steer):
         tcmd = ThrottleCmd()
@@ -367,20 +359,3 @@ class DBWNode(object):
 
 if __name__ == '__main__':
     DBWNode()
-
-"""
-TODO
-====
-
-+ test without GPU
-+ fix the way for TL detection to warm-up
-! test with lower speed limits
-! check all TODOs
-! charting should show an empty track when at red lights
-! handle stop at the end of the track
-! anticipate all TLs by a few meters
-! correctly set deceleration
-! check/lower frequency of TL detection
-! should it stop with a yellow light? Yes!
-
-"""
