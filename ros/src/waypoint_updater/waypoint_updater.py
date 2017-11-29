@@ -149,7 +149,7 @@ class WaypointUpdater(object):
         # Determine the index in `self.waypoints` of the first waypoint in front of the car
         pose_i = get_next_waypoint_idx(msg.pose, self.waypoints, self.prev_wp_idx)
 
-        if pose_i >= len(self.waypoints) and not self.end_of_track_notified:
+        if (pose_i >= len(self.waypoints) or pose_i < 0) and not self.end_of_track_notified:
             rospy.loginfo('Reached the end of the waypoints track.')
             self.end_of_track_notified = True
 

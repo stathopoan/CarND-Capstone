@@ -234,10 +234,11 @@ class DBWNode(object):
                     avg_processing_time = self.total_time / self.count
 
                     # Write to the log file used for off-line metrics charting and reporting
-                    data_msg = '{} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}\n'
-                    self.data_out_file.write(
-                        data_msg.format(self.count, wanted_velocity, throttle_cmd, brake_cmd, steering, linear_v_error,
-                                        angular_vel_error, cte, delta_t, processing_time, avg_processing_time))
+                    if False:
+                        data_msg = '{} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}\n'
+                        self.data_out_file.write(
+                            data_msg.format(self.count, wanted_velocity, throttle_cmd, brake_cmd, steering, linear_v_error,
+                                            angular_vel_error, cte, delta_t, processing_time, avg_processing_time))
 
                     """
                     # Write to ROS log files

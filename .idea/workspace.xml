@@ -2,14 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="580cb54f-85b1-4154-8e01-88102416b8f1" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/models/frozen_inference_graph.pb" afterPath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/models/frozen_inference_graph.pb" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/models/model.ckpt.data-00000-of-00001" afterPath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/models/model.ckpt.data-00000-of-00001" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/models/model.ckpt.index" afterPath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/models/model.ckpt.index" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/models/model.ckpt.meta" afterPath="$PROJECT_DIR$/ros/src/tl_detector/light_classification/models/model.ckpt.meta" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ros/src/tl_detector/tl_detector.py" afterPath="$PROJECT_DIR$/ros/src/tl_detector/tl_detector.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ros/launch/styx.launch" afterPath="$PROJECT_DIR$/ros/launch/styx.launch" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ros/src/twist_controller/dbw_node.py" afterPath="$PROJECT_DIR$/ros/src/twist_controller/dbw_node.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ros/src/waypoint_loader/waypoint_loader.py" afterPath="$PROJECT_DIR$/ros/src/waypoint_loader/waypoint_loader.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ros/src/waypoint_updater/waypoint_updater.py" afterPath="$PROJECT_DIR$/ros/src/waypoint_updater/waypoint_updater.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -20,23 +15,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="450">
-      <file leaf-file-name="utils.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/ros/src/tools/utils.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="175">
-              <caret line="7" column="0" lean-forward="true" selection-start-line="7" selection-start-column="0" selection-end-line="7" selection-end-column="0" />
-              <folding>
-                <element signature="e#0#11#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="waypoint_updater.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="waypoint_updater.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ros/src/waypoint_updater/waypoint_updater.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="389">
-              <caret line="237" column="34" lean-forward="false" selection-start-line="237" selection-start-column="13" selection-end-line="237" selection-end-column="34" />
+            <state relative-caret-position="236">
+              <caret line="148" column="36" lean-forward="false" selection-start-line="148" selection-start-column="36" selection-end-line="148" selection-end-column="36" />
               <folding>
                 <element signature="e#23#33#0" expanded="true" />
               </folding>
@@ -44,10 +27,40 @@
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="styx_debug.launch" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/ros/launch/styx_debug.launch">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="450">
+              <caret line="18" column="76" lean-forward="false" selection-start-line="18" selection-start-column="76" selection-end-line="18" selection-end-column="76" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="styx.launch" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/ros/launch/styx.launch">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="100">
+              <caret line="4" column="0" lean-forward="false" selection-start-line="4" selection-start-column="0" selection-end-line="4" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="requirements.txt" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/requirements.txt">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="250">
+              <caret line="10" column="0" lean-forward="false" selection-start-line="10" selection-start-column="0" selection-end-line="10" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="tl_classifier.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/light_classification/tl_classifier.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="50">
+            <state relative-caret-position="25">
               <caret line="2" column="0" lean-forward="false" selection-start-line="2" selection-start-column="0" selection-end-line="2" selection-end-column="0" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
@@ -56,11 +69,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="dbw_node.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="dbw_node.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/ros/src/twist_controller/dbw_node.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="186">
-              <caret line="326" column="43" lean-forward="true" selection-start-line="326" selection-start-column="43" selection-end-line="326" selection-end-column="43" />
+            <state relative-caret-position="311">
+              <caret line="230" column="0" lean-forward="true" selection-start-line="230" selection-start-column="0" selection-end-line="230" selection-end-column="0" />
               <folding>
                 <element signature="e#23#34#0" expanded="true" />
               </folding>
@@ -98,22 +111,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="server.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/ros/src/styx/server.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1161">
-              <caret line="61" column="107" lean-forward="false" selection-start-line="61" selection-start-column="107" selection-end-line="61" selection-end-column="107" />
-              <folding>
-                <element signature="e#23#38#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="tl_detector.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/tl_detector.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="886">
+            <state relative-caret-position="4500">
               <caret line="193" column="0" lean-forward="false" selection-start-line="193" selection-start-column="0" selection-end-line="193" selection-end-column="0" />
               <folding>
                 <element signature="e#22#34#0" expanded="true" />
@@ -172,7 +173,6 @@
         <option value="$PROJECT_DIR$/ros/src/tools/note.txt" />
         <option value="$PROJECT_DIR$/.gitignore" />
         <option value="$PROJECT_DIR$/ros/src/twist_controller/pid.py" />
-        <option value="$PROJECT_DIR$/ros/launch/styx.launch" />
         <option value="$PROJECT_DIR$/ros/src/twist_controller/lowpass.py" />
         <option value="$PROJECT_DIR$/ros/launch/styx_debug.launch" />
         <option value="$PROJECT_DIR$/ros/src/tl_detector/light_classification/real_model.py" />
@@ -185,9 +185,11 @@
         <option value="$PROJECT_DIR$/ros/src/twist_controller/yaw_controller.py" />
         <option value="$PROJECT_DIR$/ros/src/waypoint_loader/launch/waypoint_loader.launch" />
         <option value="$PROJECT_DIR$/ros/src/waypoint_loader/waypoint_loader.py" />
-        <option value="$PROJECT_DIR$/ros/src/twist_controller/dbw_node.py" />
         <option value="$PROJECT_DIR$/ros/src/tl_detector/tl_detector.py" />
+        <option value="$PROJECT_DIR$/requirements.txt" />
         <option value="$PROJECT_DIR$/ros/src/waypoint_updater/waypoint_updater.py" />
+        <option value="$PROJECT_DIR$/ros/launch/styx.launch" />
+        <option value="$PROJECT_DIR$/ros/src/twist_controller/dbw_node.py" />
       </list>
     </option>
   </component>
@@ -213,6 +215,8 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
+      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -257,6 +261,13 @@
               <item name="CarND-Capstone-tl-detector-2" type="462c0819:PsiDirectoryNode" />
               <item name="ros" type="462c0819:PsiDirectoryNode" />
               <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="twist_controller" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="CarND-Capstone-tl-detector-2" type="b2602c69:ProjectViewProjectNode" />
+              <item name="CarND-Capstone-tl-detector-2" type="462c0819:PsiDirectoryNode" />
+              <item name="ros" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
               <item name="waypoint_loader" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
@@ -278,8 +289,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
-      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -521,18 +530,17 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="1969" y="-4" width="2513" height="1452" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.22253981" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.22743978" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3294025" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3294025" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.30031446" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3294025" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3294025" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.30031446" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.21600653" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.39937106" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
@@ -759,22 +767,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ros/launch/styx.launch">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="250">
-          <caret line="10" column="0" lean-forward="false" selection-start-line="2" selection-start-column="0" selection-end-line="25" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ros/launch/styx_debug.launch">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="450">
-          <caret line="18" column="76" lean-forward="false" selection-start-line="18" selection-start-column="76" selection-end-line="18" selection-end-column="76" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/.local/python2.7/lib/python2.7/sre_parse.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="243">
@@ -786,13 +778,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="468">
           <caret line="245" column="41" lean-forward="true" selection-start-line="245" selection-start-column="41" selection-end-line="245" selection-end-column="41" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/requirements.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
         </state>
       </provider>
     </entry>
@@ -840,8 +825,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/ros/src/tools/utils.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="175">
-          <caret line="7" column="0" lean-forward="true" selection-start-line="7" selection-start-column="0" selection-end-line="7" selection-end-column="0" />
+        <state relative-caret-position="125">
+          <caret line="7" column="0" lean-forward="false" selection-start-line="7" selection-start-column="0" selection-end-line="7" selection-end-column="0" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
           </folding>
@@ -850,7 +835,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/ros/src/styx/server.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1161">
+        <state relative-caret-position="1450">
           <caret line="61" column="107" lean-forward="false" selection-start-line="61" selection-start-column="107" selection-end-line="61" selection-end-column="107" />
           <folding>
             <element signature="e#23#38#0" expanded="true" />
@@ -886,25 +871,12 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="194">
           <caret line="80" column="8" lean-forward="false" selection-start-line="80" selection-start-column="8" selection-end-line="80" selection-end-column="8" />
-          <folding>
-            <element signature="e#23#32#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ros/src/twist_controller/dbw_node.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="186">
-          <caret line="326" column="43" lean-forward="true" selection-start-line="326" selection-start-column="43" selection-end-line="326" selection-end-column="43" />
-          <folding>
-            <element signature="e#23#34#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/tl_detector.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="886">
+        <state relative-caret-position="4500">
           <caret line="193" column="0" lean-forward="false" selection-start-line="193" selection-start-column="0" selection-end-line="193" selection-end-column="0" />
           <folding>
             <element signature="e#22#34#0" expanded="true" />
@@ -914,7 +886,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/light_classification/tl_classifier.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="50">
+        <state relative-caret-position="25">
           <caret line="2" column="0" lean-forward="false" selection-start-line="2" selection-start-column="0" selection-end-line="2" selection-end-column="0" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
@@ -922,12 +894,46 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/requirements.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="250">
+          <caret line="10" column="0" lean-forward="false" selection-start-line="10" selection-start-column="0" selection-end-line="10" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/ros/src/waypoint_updater/waypoint_updater.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="389">
-          <caret line="237" column="34" lean-forward="false" selection-start-line="237" selection-start-column="13" selection-end-line="237" selection-end-column="34" />
+        <state relative-caret-position="236">
+          <caret line="148" column="36" lean-forward="false" selection-start-line="148" selection-start-column="36" selection-end-line="148" selection-end-column="36" />
           <folding>
             <element signature="e#23#33#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ros/launch/styx_debug.launch">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="450">
+          <caret line="18" column="76" lean-forward="false" selection-start-line="18" selection-start-column="76" selection-end-line="18" selection-end-column="76" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ros/launch/styx.launch">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="100">
+          <caret line="4" column="0" lean-forward="false" selection-start-line="4" selection-start-column="0" selection-end-line="4" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ros/src/twist_controller/dbw_node.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="311">
+          <caret line="230" column="0" lean-forward="true" selection-start-line="230" selection-start-column="0" selection-end-line="230" selection-end-column="0" />
+          <folding>
+            <element signature="e#23#34#0" expanded="true" />
           </folding>
         </state>
       </provider>
