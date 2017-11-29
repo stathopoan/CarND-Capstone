@@ -27,7 +27,7 @@ This project consists of two parts:
   </tr>
   <tr>
     <td>Aruul Mozhi Varman S</td>
-    <td></td>
+    <td>aruulmozhivarman@outlook.com</td>
   </tr>
   <tr>
     <td>Anastasios Stathopoulos</td>
