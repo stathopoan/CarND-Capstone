@@ -19,7 +19,7 @@
     <include file="$(find tl_detector)/launch/tl_detector.launch"/>
 
     <!-- Charting tools for debugging -->
-    <include file="$(find tools)/launch/chart.launch" />
+    <!-- <include file="$(find tools)/launch/chart.launch" /> -->
 
     <!--Traffic Light Locations and Camera Config -->
     <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" />

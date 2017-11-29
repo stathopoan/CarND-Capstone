@@ -42,7 +42,7 @@ def kmph2mps(velocity_kmph):
 class WaypointLoader(object):
 
     def __init__(self):
-        rospy.init_node('waypoint_loader', log_level=rospy.DEBUG)
+        rospy.init_node('waypoint_loader', log_level=rospy.INFO)
 
         self.pub = rospy.Publisher('/base_waypoints', Lane, queue_size=1, latch=True)
 
@@ -74,8 +74,8 @@ class WaypointLoader(object):
                 q = quaternion_from_yaw(float(wp['yaw']))
                 p.pose.pose.orientation = Quaternion(*q)
                 p.twist.twist.linear.x = float(self.velocity)
-
                 waypoints.append(p)
+
         return self.decelerate(waypoints)
 
     def distance(self, p1, p2):

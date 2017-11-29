@@ -2,6 +2,7 @@ import tensorflow as tf
 import os
 from styx_msgs.msg import TrafficLight
 import numpy as np
+import rospy
 
 
 class RealModel(object):
@@ -23,7 +24,9 @@ class RealModel(object):
             self.d_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
             self.d_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
             self.num_d = self.detection_graph.get_tensor_by_name('num_detections:0')
-        self.sess = tf.Session(graph=self.detection_graph)
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        self.sess = tf.Session(graph=self.detection_graph, config=config)
 
     def predict(self, img):
         detection = TrafficLight.UNKNOWN
@@ -35,17 +38,21 @@ class RealModel(object):
             scores = scores.squeeze()
             classes = classes.squeeze()
             best = 0
+            sign = None
             for i in range(boxes.shape[0]):
-                if scores[i] > self.prob_thr:
-                    if scores[i] > best:
-                        sign = classes[i]
-                        best = scores[i]
-            if sign == self.GREEN:
+                # if scores[i] > self.prob_thr:
+                if scores[i] > best:
+                    sign = classes[i]
+                    best = scores[i]
+            if sign is None or best < self.prob_thr:
+                detection = TrafficLight.UNKNOWN
+            elif sign == self.GREEN:
                 detection = TrafficLight.GREEN
             elif sign == self.RED:
                 detection = TrafficLight.RED
             elif sign == self.YELLOW:
                 detection = TrafficLight.YELLOW
+            rospy.logdebug('detection={} best={} sign={}'.format(detection, best, sign))
             return detection
 
 

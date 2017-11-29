@@ -5,41 +5,25 @@ import threading
 import time
 import copy
 import rospy
-import tf
+import warnings
 import numpy as np
 import os
+import sys
 
-from std_msgs.msg import Bool
-from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
+from std_msgs.msg import Bool, Int32
+from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd
 from yaw_controller import YawController
 from pid import PID
 from twist_controller import GAS_DENSITY
 from geometry_msgs.msg import TwistStamped, PoseStamped
 from styx_msgs.msg import Lane
-from lowpass import SimpleLowPassFilter, LowPassFilter
+from lowpass import SimpleLowPassFilter
 
-'''
-You can build this node only after you have built (or partially built) the `waypoint_updater` node.
+this_file_dir_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(this_file_dir_path+'/../tools')
+from utils import unpack_pose
 
-You will subscribe to `/twist_cmd` message which provides the proposed linear and angular velocities.
-You can subscribe to any other message that you find important or refer to the document for list
-of messages subscribed to by the reference implementation of this node.
-
-One thing to keep in mind while building this node and the `twist_controller` class is the status
-of `dbw_enabled`. While in the simulator, its enabled all the time, in the real car, that will
-not be the case. This may cause your PID controller to accumulate error because the car could
-temporarily be driven by a human instead of your controller.
-
-We have provided two launch files with this node. Vehicle specific values (like vehicle_mass,
-wheel_base) etc should not be altered in these files.
-
-We have also provided some reference implementations for PID controller and other utility classes.
-You are free to use them or build your own.
-
-Once you have the proposed throttle, brake, and steer values, publish it on the various publishers
-that we have created in the `__init__` function.
-
-'''
+warnings.simplefilter('ignore', np.RankWarning)  # Suppress Numpy RankWarning for Polyfit
 
 
 def rad2deg(rad):
@@ -67,14 +51,6 @@ def cte_from_waypoints(car_x, car_y, car_yaw, waypoints):
     return cte
 
 
-def unpack_pose(pose):  # TODO code duplication!
-    x = pose.pose.position.x
-    y = pose.pose.position.y
-    quaternion = (pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w)
-    _, _, yaw = tf.transformations.euler_from_quaternion(quaternion)
-    return x, y, yaw
-
-
 def get_progressive_file_name(root, ext):
     i = 0
     while os.path.exists("{}{:04d}.{}".format(root, i, ext)):
@@ -84,13 +60,11 @@ def get_progressive_file_name(root, ext):
 
 class DBWNode(object):
     def __init__(self):
-        cwd = os.getcwd()
-
-        rospy.init_node('dbw_node', log_level=rospy.DEBUG)
+        rospy.init_node('dbw_node', log_level=rospy.INFO)
 
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
-        brake_deadband = rospy.get_param('~brake_deadband', .1)  # TODO Support!
+        brake_deadband = rospy.get_param('~brake_deadband', .1)
         decel_limit = rospy.get_param('~decel_limit', -5)
         accel_limit = rospy.get_param('~accel_limit', 1.)
         wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
@@ -99,13 +73,15 @@ class DBWNode(object):
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
+        self.speed_limit = rospy.get_param('/waypoint_loader/velocity') * 1000 / 3600.  # m/s
+
         self.max_steer_angle = max_steer_angle
 
         self.current_linear_velocity = .0
         self.current_yaw_velocity = .0
         self.current_velocity_lock = threading.Lock()
 
-        self.dbw_enabled = False  # TODO good for the simulator, but what is the right value for Carla?
+        self.dbw_enabled = False
         self.dbw_enabled_lock = threading.Lock()
 
         self.last_twist_cb_time = None  # Only read/write this inside twist_cb(), it is not protected by locks!
@@ -137,13 +113,14 @@ class DBWNode(object):
         self.total_time = .0
         self.count = .0
 
+        self.tl_detection_is_ready = False
+
         throttle_PID = .4, .015, 0.0  # Best so far
 
         path_to_dir = os.path.expanduser('~/.ros/chart_data')  # Replace ~ with path to user home directory
         f_name = get_progressive_file_name(path_to_dir, 'txt')
         self.data_out_file = open(f_name, 'w')
         assert self.data_out_file is not None
-        rospy.logdebug('Current dir is {}'.format(cwd))
         rospy.loginfo('Writing performance data to file {}'.format(f_name))
         # Write headers for file
         self.data_out_file.write(
@@ -165,6 +142,7 @@ class DBWNode(object):
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.DBW_enabled_cb)
         rospy.Subscriber('/final_waypoints', Lane, self.final_waypoints_cb, queue_size=1)
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        self.traffic_sub = rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         self.spin()
 
@@ -191,8 +169,14 @@ class DBWNode(object):
                 case.
                 '''
                 twist = self.get_twist()
-                if self.get_dbw_enabled() and twist is not None:
-                    wanted_velocity = twist.linear.x
+                if self.get_dbw_enabled() and twist is not None and self.tl_detection_ready():
+                    if twist.linear.x < 0:
+                        rospy.logdebug("Negative velocity in twist command: twist.linear.x={}".format(twist.linear.x))
+                    if np.isclose(twist.linear.x, .0) and not np.isclose(twist.angular.z, .0):
+                        rospy.logdebug("Null velocity {} with non null angular velocity {} in twist command".format(twist.linear.x, twist.angular.z))
+                        wanted_velocity = self.speed_limit * .5
+                    else:
+                        wanted_velocity = abs(twist.linear.x)
                     wanted_angular_velocity = twist.angular.z
                     current_linear_v, current_angular_v = self.get_current_velocity()
                     steering = self.yaw_controller.get_steering(linear_velocity=wanted_velocity,
@@ -208,8 +192,8 @@ class DBWNode(object):
                         brake_cmd = .0
                     elif throttle < 0:
                         throttle_cmd = 0
-                        brake_cmd = - 3 * self.max_decel_torque * throttle  # TODO keep tuning this!
-                        if brake_cmd > self.max_decel_torque:  # TODO make it fancier with min() and max()
+                        brake_cmd = - 3 * self.max_decel_torque * throttle
+                        if brake_cmd > self.max_decel_torque:
                             brake_cmd = self.max_decel_torque
                         if brake_cmd < self.torque_deadband:
                             brake_cmd = 0
@@ -221,9 +205,12 @@ class DBWNode(object):
                         throttle_cmd = .0
                         brake_cmd = self.max_decel_torque / 3.
 
-                    assert 0 <= throttle_cmd <= 1  # TODO remove asserts before submission
-                    assert 0 <= brake_cmd <= self.max_decel_torque
-                    assert -self.max_steer_angle <= steering <= self.max_steer_angle
+                    if throttle_cmd < 0 or throttle_cmd > 1:
+                        rospy.logdebug("Throttle command out of range={}".format(throttle_cmd))
+                    if brake_cmd < 0 or brake_cmd > self.max_decel_torque:
+                        rospy.logdebug("Brake command out of range={}".format(brake_cmd))
+                    if abs(steering) > self.max_steer_angle:
+                        rospy.logdebug("Steering command out of range={}".format(steering))
 
                     self.publish(throttle=throttle_cmd, brake=brake_cmd, steer=steering)
 
@@ -247,17 +234,21 @@ class DBWNode(object):
                     avg_processing_time = self.total_time / self.count
 
                     # Write to the log file used for off-line metrics charting and reporting
-                    data_msg = '{} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}\n'
-                    self.data_out_file.write(
-                        data_msg.format(self.count, wanted_velocity, throttle_cmd, brake_cmd, steering, linear_v_error,
-                                        angular_vel_error, cte, delta_t, processing_time, avg_processing_time))
+                    if False:
+                        data_msg = '{} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}\n'
+                        self.data_out_file.write(
+                            data_msg.format(self.count, wanted_velocity, throttle_cmd, brake_cmd, steering, linear_v_error,
+                                            angular_vel_error, cte, delta_t, processing_time, avg_processing_time))
 
+                    """
                     # Write to ROS log files
                     log_msg = '#{} wanted_velocity={:.4f} throttle={:.4f} brake={:.4f} steer={:.4f} linear_v_error={:.4f} cte={:.4f} delta_t={:.4f} processing_time={:.4f} avg proc time={:.4f}'
                     rospy.logdebug(
                         log_msg.format(self.count, wanted_velocity, throttle_cmd, brake_cmd, steering, linear_v_error,
                                        cte, delta_t,
                                        processing_time, avg_processing_time))
+                    """
+
             rate.sleep()
 
     def set_twist(self, twist):
@@ -288,15 +279,30 @@ class DBWNode(object):
         self.dbw_enabled_lock.acquire()
         prev_value = self.dbw_enabled
         self.dbw_enabled = enable
-        if prev_value == False and enable == True:
+        if prev_value is False and enable is True:
             self.throttle_controller.reset()
         self.dbw_enabled_lock.release()
+        if enable:
+            info = 'Drive-by-Wire enabled.'
+            if not self.tl_detection_ready():
+                info += ' Stand by for Traffic Light Detection to start.'
+            rospy.loginfo(info)
+        else:
+            rospy.loginfo('Drive-by-Wire disabled.')
 
     def get_dbw_enabled(self):
         self.dbw_enabled_lock.acquire()
         enabled = self.dbw_enabled
         self.dbw_enabled_lock.release()
         return enabled
+
+    def traffic_cb(self, _):
+        self.traffic_sub.unregister()
+        self.tl_detection_is_ready = True
+        rospy.loginfo('Traffic Light Detection started, ready to drive.')
+
+    def tl_detection_ready(self):
+        return self.tl_detection_is_ready
 
     def publish(self, throttle, brake, steer):
         tcmd = ThrottleCmd()
@@ -334,9 +340,9 @@ class DBWNode(object):
         return pose
 
     def pose_cb(self, msg):
-        self.pose_lock.acquire();
-        self.pose_x, self.pose_y, self.pose_yaw = unpack_pose(msg)
-        self.pose_lock.release();
+        self.pose_lock.acquire()
+        self.pose_x, self.pose_y, self.pose_yaw = unpack_pose(msg.pose)
+        self.pose_lock.release()
 
     def twist_cb(self, msg):  # This is called at 30 Hz
         self.set_twist(msg.twist)
@@ -345,26 +351,12 @@ class DBWNode(object):
         linear = msg.twist.linear.x
         angular = msg.twist.angular.z
         self.set_current_velocity(linear=linear, angular=angular)
+        if linear > self.speed_limit:
+            rospy.logdebug("Current speed {} exceeds speed limit {}".format(linear, self.speed_limit))
 
     def DBW_enabled_cb(self, msg):
-        rospy.logdebug('Received emable DBW')
-        rospy.logdebug(msg)
         self.set_dbw_enabled(msg.data)
 
 
 if __name__ == '__main__':
     DBWNode()
-
-"""
-TODO
-====
-
-** tunare i filtri su throttle/brake/steering
-- servono veramente le deep copy?
-- controlla il time-stamp degli eventi in arrivo a twist_cb()
-* calcolare la velocita' di crocera in base alla velocita' massima, attenzione anche alla velocita' dei waypoint;
-testare a velocita' molto basse!
-* l'auto potrebbe andare all'indietro? Ovvero avere una velocita' negativa. Considerare di gestirlo.
-- considera di prendere il max torque da BrakCmd.TORQUE_MAX
-
-"""
