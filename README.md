@@ -16,6 +16,8 @@ This project consists of two parts:
 
 ## Team members
 
+**Team name: ADAS 2.0**
+
 <table>
   <tr>
     <th>Name</th>
