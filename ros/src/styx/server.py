@@ -4,7 +4,7 @@ import socketio
 import eventlet
 import eventlet.wsgi
 import time
-eventlet.monkey_patch()
+eventlet.monkey_patch(socket=True, select=True, time=True)
 from flask import Flask, render_template
 
 from bridge import Bridge
