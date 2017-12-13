@@ -2,6 +2,7 @@
 
 import sys
 import os
+import copy
 import rospy
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane
@@ -125,6 +126,16 @@ class WaypointUpdater(object):
     def get_tl(self):
         return self.tl
 
+    def take_margin(self, wp_i, margin):
+        dist = 0
+        new_wp_i = wp_i
+        prev_wp_i = wp_i
+        while dist < margin:
+            new_wp_i = (new_wp_i - 1) % len(self.waypoints)
+            dist += distance(self.waypoints, new_wp_i, prev_wp_i)
+            prev_wp_i = new_wp_i
+        return new_wp_i
+
     def pose_cb(self, msg):  # This is being called at 50 Hz
         """
         Processes pose update messages.
@@ -162,6 +173,9 @@ class WaypointUpdater(object):
         tl_wp_i = self.get_tl()
         rospy.logdebug("Getting tl_wp_i={}".format(tl_wp_i))
 
+        if tl_wp_i >=0:
+            tl_wp_i = self.take_margin(tl_wp_i, 4)
+
         lane = Lane()
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time(0)
@@ -176,7 +190,7 @@ class WaypointUpdater(object):
                 i = pose_i+count
                 if i >= len(self.waypoints):  # Car must stop at the end of the waypoints track
                     break
-                wp = self.waypoints[i]
+                wp = copy.deepcopy(self.waypoints[i])
                 # Cap the linear velocity at self.enforced_speed_limit
                 wp.twist.twist.linear.x = min(wp.twist.twist.linear.x, self.enforced_speed_limit)
                 lane.waypoints.append(wp)
@@ -195,6 +209,9 @@ class WaypointUpdater(object):
                                            self.decel_limit,
                                            self.enforced_speed_limit)
 
+        '''if len(lane.waypoints) >= 2 and lane.waypoints[0].twist.twist.linear.x == 0 and lane.waypoints[1].twist.twist.linear.x > 0:
+            cicco = 1
+            pass'''
         self.final_waypoints_pub.publish(lane)
         total_time = time.time() - now
         rospy.logdebug('Time spent in pose_cb: {}s'.format(total_time))

@@ -75,8 +75,7 @@ class TLDetector(object):
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
-        exact_stop_line_idxs = [np.argmin([euler_distance((wp.pose.pose.position.x, wp.pose.pose.position.y), stop_line_pos) for wp in self.waypoints]) for stop_line_pos in self.stop_line_positions]
-        self.stop_line_idxs = [(idx - 1) % len(self.waypoints) for idx in exact_stop_line_idxs]  # Take a margin of 1
+        self.stop_line_idxs = [np.argmin([euler_distance((wp.pose.pose.position.x, wp.pose.pose.position.y), stop_line_pos) for wp in self.waypoints]) for stop_line_pos in self.stop_line_positions]
         rospy.Subscriber('/image_color', Image, self.image_cb)
 
     '''
@@ -122,21 +121,6 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
-    '''
-    def get_closest_waypoint(self, pose_stamped):
-        """Identifies the closest path waypoint to the given position
-            https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
-        Args:
-            pose (Pose): position to match a waypoint to
-
-        Returns:
-            int: index of the closest waypoint in self.waypoints
-
-        """
-
-        self.prev_wp_idx = get_next_waypoint_idx(pose_stamped.pose, self.waypoints, self.prev_wp_idx)
-        return self.prev_wp_idx
-    '''
 
     def get_light_state(self):
         """Determines the current color of the traffic light

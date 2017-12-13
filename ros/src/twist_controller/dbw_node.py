@@ -169,6 +169,14 @@ class DBWNode(object):
                 case.
                 '''
                 twist = self.get_twist()
+
+                if self.get_dbw_enabled() and not self.tl_detection_ready():
+                    ''' While DBW is enabled, we need to publish commands at a 50Hz rate, otherwise the car may
+                    disengage DBW. If we are not ready to drive yet because traffic lights detection is not ready,
+                    then keep DBW engaged by publishing commands at the requested rate anyway, and direct the
+                    car to apply brakes.'''
+                    self.publish(throttle=0, brake=self.max_decel_torque / 3., steer=0)
+
                 if self.get_dbw_enabled() and twist is not None and self.tl_detection_ready():
                     if twist.linear.x < 0:
                         rospy.logdebug("Negative velocity in twist command: twist.linear.x={}".format(twist.linear.x))
