@@ -2,11 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="580cb54f-85b1-4154-8e01-88102416b8f1" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/ros/launch/styx_debug.launch" afterPath="$PROJECT_DIR$/ros/launch/styx_debug.launch" />
-      <change beforePath="$PROJECT_DIR$/ros/src/styx/bridge.py" afterPath="$PROJECT_DIR$/ros/src/styx/bridge.py" />
-      <change beforePath="$PROJECT_DIR$/ros/src/twist_controller/dbw_node.py" afterPath="$PROJECT_DIR$/ros/src/twist_controller/dbw_node.py" />
-      <change beforePath="$PROJECT_DIR$/ros/src/waypoint_follower/src/pure_pursuit_core.cpp" afterPath="$PROJECT_DIR$/ros/src/waypoint_follower/src/pure_pursuit_core.cpp" />
+      <change beforePath="$PROJECT_DIR$/README.md" afterPath="$PROJECT_DIR$/README.md" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -32,16 +28,6 @@
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="7843">
               <caret line="341" column="24" lean-forward="false" selection-start-line="341" selection-start-column="24" selection-end-line="341" selection-end-column="24" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="tl_detector.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/ros/src/tl_detector/tl_detector.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1495">
-              <caret line="78" column="62" lean-forward="false" selection-start-line="78" selection-start-column="62" selection-end-line="78" selection-end-column="62" />
               <folding />
             </state>
           </provider>
@@ -97,12 +83,25 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="waypoint_loader.launch" pinned="false" current-in-tab="true">
+      <file leaf-file-name="waypoint_loader.launch" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ros/src/waypoint_loader/launch/waypoint_loader.launch">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="23">
-              <caret line="1" column="8" lean-forward="true" selection-start-line="1" selection-start-column="8" selection-end-line="1" selection-end-column="8" />
+            <state relative-caret-position="161">
+              <caret line="7" column="0" lean-forward="true" selection-start-line="7" selection-start-column="0" selection-end-line="7" selection-end-column="0" />
               <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="README.md" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/README.md">
+          <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+            <state split_layout="SPLIT">
+              <first_editor relative-caret-position="1058">
+                <caret line="108" column="354" lean-forward="false" selection-start-line="108" selection-start-column="354" selection-end-line="108" selection-end-column="354" />
+                <folding />
+              </first_editor>
+              <second_editor />
             </state>
           </provider>
         </entry>
@@ -175,7 +174,6 @@
         <option value="$PROJECT_DIR$/ros/src/twist_controller/yaw_controller.py" />
         <option value="$PROJECT_DIR$/requirements.txt" />
         <option value="$PROJECT_DIR$/ros/launch/styx.launch" />
-        <option value="$PROJECT_DIR$/README.md" />
         <option value="$PROJECT_DIR$/ros/src/waypoint_loader/waypoint_loader.py" />
         <option value="$PROJECT_DIR$/ros/src/tools/utils.py" />
         <option value="$PROJECT_DIR$/ros/src/waypoint_updater/waypoint_updater.py" />
@@ -186,6 +184,7 @@
         <option value="$PROJECT_DIR$/ros/src/styx/bridge.py" />
         <option value="$PROJECT_DIR$/ros/src/waypoint_follower/src/pure_pursuit_core.cpp" />
         <option value="$PROJECT_DIR$/ros/src/waypoint_loader/launch/waypoint_loader.launch" />
+        <option value="$PROJECT_DIR$/README.md" />
       </list>
     </option>
   </component>
@@ -226,45 +225,6 @@
               <item name="CarND-Capstone-fixes" type="b2602c69:ProjectViewProjectNode" />
               <item name="CarND-Capstone-fixes" type="462c0819:PsiDirectoryNode" />
               <item name="data" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="CarND-Capstone-fixes" type="b2602c69:ProjectViewProjectNode" />
-              <item name="CarND-Capstone-fixes" type="462c0819:PsiDirectoryNode" />
-              <item name="ros" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="CarND-Capstone-fixes" type="b2602c69:ProjectViewProjectNode" />
-              <item name="CarND-Capstone-fixes" type="462c0819:PsiDirectoryNode" />
-              <item name="ros" type="462c0819:PsiDirectoryNode" />
-              <item name="launch" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="CarND-Capstone-fixes" type="b2602c69:ProjectViewProjectNode" />
-              <item name="CarND-Capstone-fixes" type="462c0819:PsiDirectoryNode" />
-              <item name="ros" type="462c0819:PsiDirectoryNode" />
-              <item name="src" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="CarND-Capstone-fixes" type="b2602c69:ProjectViewProjectNode" />
-              <item name="CarND-Capstone-fixes" type="462c0819:PsiDirectoryNode" />
-              <item name="ros" type="462c0819:PsiDirectoryNode" />
-              <item name="src" type="462c0819:PsiDirectoryNode" />
-              <item name="styx" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="CarND-Capstone-fixes" type="b2602c69:ProjectViewProjectNode" />
-              <item name="CarND-Capstone-fixes" type="462c0819:PsiDirectoryNode" />
-              <item name="ros" type="462c0819:PsiDirectoryNode" />
-              <item name="src" type="462c0819:PsiDirectoryNode" />
-              <item name="waypoint_loader" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="CarND-Capstone-fixes" type="b2602c69:ProjectViewProjectNode" />
-              <item name="CarND-Capstone-fixes" type="462c0819:PsiDirectoryNode" />
-              <item name="ros" type="462c0819:PsiDirectoryNode" />
-              <item name="src" type="462c0819:PsiDirectoryNode" />
-              <item name="waypoint_loader" type="462c0819:PsiDirectoryNode" />
-              <item name="launch" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -795,16 +755,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/README.md">
-      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
-        <state split_layout="SPLIT">
-          <first_editor relative-caret-position="414">
-            <caret line="18" column="23" lean-forward="false" selection-start-line="18" selection-start-column="23" selection-end-line="18" selection-end-column="23" />
-          </first_editor>
-          <second_editor />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ros/devel/lib/python2.7/dist-packages/styx_msgs/msg/_Lane.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="920">
@@ -950,9 +900,20 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/ros/src/waypoint_loader/launch/waypoint_loader.launch">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="23">
-          <caret line="1" column="8" lean-forward="true" selection-start-line="1" selection-start-column="8" selection-end-line="1" selection-end-column="8" />
+        <state relative-caret-position="161">
+          <caret line="7" column="0" lean-forward="true" selection-start-line="7" selection-start-column="0" selection-end-line="7" selection-end-column="0" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+        <state split_layout="SPLIT">
+          <first_editor relative-caret-position="1058">
+            <caret line="108" column="354" lean-forward="false" selection-start-line="108" selection-start-column="354" selection-end-line="108" selection-end-column="354" />
+            <folding />
+          </first_editor>
+          <second_editor />
         </state>
       </provider>
     </entry>

@@ -106,7 +106,7 @@ This project requires the use of a GPU. Make sure you have available a Nvidia GP
 
 ## Running Instructions
 
-Run the ROS code and open simulator (see instructions at Usage section). In order for the car to move autonomously uncheck "*Manual*" checkbox. The car may take a few seconds before it begins moving due to waiting for the traffic classifier to load its model and start classification. This behavior only apllies to the first time you uncheck "*Manual*".
+Run the ROS code and open simulator (see instructions at Usage section). In order for the car to move autonomously uncheck "*Manual*" checkbox. It may take a few seconds for the traffic lights recognition to start working, if you uncheck manual right away after starting the ROS code or the simulator, the car is likely to ignore the first traffic light.
 
 <br>
 <img src="https://i.imgur.com/UWz5oMI.png" width="425"/> <img src="https://i.imgur.com/7QXgxVY.png" width="425"/>
