@@ -113,7 +113,7 @@ class DBWNode(object):
         self.total_time = .0
         self.count = .0
 
-        self.tl_detection_is_ready = False
+        self.tl_detection_is_ready = True
 
         throttle_PID = .4, .015, 0.0  # Best so far
 
@@ -293,7 +293,7 @@ class DBWNode(object):
         if enable:
             info = 'Drive-by-Wire enabled.'
             if not self.tl_detection_ready():
-                info += ' Stand by for Traffic Light Detection to start.'
+                info += ' ********** Stand by for Traffic Light Detection to start. **********'
             rospy.loginfo(info)
         else:
             rospy.loginfo('Drive-by-Wire disabled.')
@@ -307,7 +307,9 @@ class DBWNode(object):
     def traffic_cb(self, _):
         self.traffic_sub.unregister()
         self.tl_detection_is_ready = True
-        rospy.loginfo('Traffic Light Detection started, ready to drive.')
+        rospy.loginfo('**********************************************************************')
+        rospy.loginfo('*          Traffic Light Detection started, ready to drive.          *')
+        rospy.loginfo('**********************************************************************')
 
     def tl_detection_ready(self):
         return self.tl_detection_is_ready

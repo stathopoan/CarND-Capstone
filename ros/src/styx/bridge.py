@@ -39,7 +39,7 @@ TYPE = {
 
 class Bridge(object):
     def __init__(self, conf, server):
-        rospy.init_node('styx_server',  log_level=rospy.DEBUG)
+        rospy.init_node('styx_server',  log_level=rospy.INFO)
         self.server = server
         self.vel = 0.
         self.yaw = None
