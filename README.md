@@ -106,7 +106,11 @@ This project requires the use of a GPU. Make sure you have available a Nvidia GP
 
 ## Running Instructions
 
-Run the ROS code and open simulator (see instructions at Usage section). In order for the car to move autonomously uncheck "*Manual*" checkbox. It may take a few seconds for the traffic lights recognition to start working, if you uncheck manual right away after starting the ROS code or the simulator, the car is likely to ignore the first traffic light.
+Run the ROS code and open simulator (see instructions at Usage section). In order for the car to move autonomously uncheck "*Manual*" checkbox. 
+
+To turn on the camera and allow traffic lights recognition, make sure "Camera" is checked. 
+
+After the first time you check "Camera" during the simulation, it takes a few seconds for traffic lights recognition to start working. If the camera moves before that, it is likely to ignore the first traffic light.
 
 <br>
 <img src="https://i.imgur.com/UWz5oMI.png" width="425"/> <img src="https://i.imgur.com/7QXgxVY.png" width="425"/>
@@ -129,7 +133,7 @@ Run the ROS code and open simulator (see instructions at Usage section). In orde
   * [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) if you have Ubuntu 14.04.
 * [Dataspeed DBW](https://bitbucket.org/DataspeedInc/dbw_mkz_ros)
   * Use this option to install the SDK on a workstation that already has ROS installed: [One Line SDK Install (binary)](https://bitbucket.org/DataspeedInc/dbw_mkz_ros/src/81e63fcc335d7b64139d7482017d6a97b405e250/ROS_SETUP.md?fileviewer=file-view-default)
-* Download the [Udacity Simulator](https://github.com/udacity/CarND-Capstone/releases/tag/v1.2).
+* Download the [Udacity Simulator](https://github.com/udacity/CarND-Capstone/releases).
 
 ### Docker Installation
 [Install Docker](https://docs.docker.com/engine/installation/)
