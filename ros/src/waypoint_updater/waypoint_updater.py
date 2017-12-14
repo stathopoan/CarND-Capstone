@@ -224,8 +224,8 @@ class WaypointUpdater(object):
         # This callback should be called only once, with the list of waypoints not yet initialised.
         assert self.waypoints is None
 
-        for wp in waypoints.waypoints:
-            wp.twist.twist.linear.x = 9.
+        # for wp in waypoints.waypoints:
+        #    wp.twist.twist.linear.x = 9.
 
         self.waypoints = waypoints.waypoints  # No need to guarantee mutual exclusion in accessing this data member
 
